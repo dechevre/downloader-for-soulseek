@@ -1,0 +1,437 @@
+
+================================================================================
+Track: Sacred Spirit, Dreadzone - Ya-Na-Hana (Celebrate Wild Rice) - Remix (2011)
+Exact query   : Sacred Spirit, Dreadzone - Ya-Na-Hana (Celebrate Wild Rice) - Remix
+Fallback query: Sacred Spirit - Ya-Na-Hana
+================================================================================
+
+Search started: 5b8c0f02-3574-45f2-a7d4-704bc9e8a33c
+State: InProgress | Responses: 0
+State: InProgress | Responses: 0
+State: InProgress | Responses: 0
+State: InProgress | Responses: 0
+State: InProgress | Responses: 0
+State: InProgress | Responses: 0
+State: InProgress | Responses: 0
+State: InProgress | Responses: 0
+State: InProgress | Responses: 0
+State: InProgress | Responses: 0
+State: InProgress | Responses: 0
+State: InProgress | Responses: 0
+State: InProgress | Responses: 0
+State: InProgress | Responses: 0
+State: Completed, TimedOut | Responses: 0
+Number of users: 0
+Exact search looked weak, trying fallback...
+
+Search started: 543daf60-3f58-4da7-b78b-7922dda17417
+State: InProgress | Responses: 1
+State: InProgress | Responses: 18
+State: InProgress | Responses: 20
+State: InProgress | Responses: 20
+State: InProgress | Responses: 20
+State: InProgress | Responses: 20
+State: InProgress | Responses: 20
+State: InProgress | Responses: 20
+State: InProgress | Responses: 20
+State: InProgress | Responses: 20
+State: InProgress | Responses: 20
+State: InProgress | Responses: 20
+State: InProgress | Responses: 20
+State: InProgress | Responses: 20
+State: InProgress | Responses: 20
+State: InProgress | Responses: 20
+State: InProgress | Responses: 20
+State: Completed, TimedOut | Responses: 20
+Number of users: 20
+[ 66] MP3  320kbps  17.6MB   427s   oempaloempa0101    Lounge\Sacred Spirit - Chants And Dances Of The Native Americans\Sacred Spirit - Ya-Na-Hana (Celebrate Wild Rice).mp3
+  source   : Sacred Spirit - Ya-Na-Hana
+  subscores: {'format': 52, 'duration': -2, 'filename': 10, 'size_plausibility': 6, 'query_match': 0}
+  reasons  : MP3 is widely compatible; 320kbps MP3 preferred; Artist tokens matched (2); Title tokens matched (6)
+  warnings : Missing duration for precise match checking; Target expects variant term(s) remix, but candidate filename does not show them
+
+[ 66] MP3  320kbps  16.3MB   427s   mrextrafartypants  Music\Sacred Spirit\Sacred Spirit_ Chants And Dances Of The\1-04 Ya-Na-Hana (Celebrate Wild Rice 1.mp3
+  source   : Sacred Spirit - Ya-Na-Hana
+  subscores: {'format': 52, 'duration': -2, 'filename': 10, 'size_plausibility': 6, 'query_match': 0}
+  reasons  : MP3 is widely compatible; 320kbps MP3 preferred; Artist tokens matched (2); Title tokens matched (6)
+  warnings : Missing duration for precise match checking; Target expects variant term(s) remix, but candidate filename does not show them
+
+[ 66] MP3  320kbps  16.3MB   425s   doofyxpqt          A\Music\Sacred Spirit - (11-CD Box Set)(320)\Sacred Spirit - Chant And Dances Of The Native Americans (1994)(320)\04. Sacred Spirit - Celebrate Wild Rice (Ya-Na-Hana).mp3
+  source   : Sacred Spirit - Ya-Na-Hana
+  subscores: {'format': 52, 'duration': -2, 'filename': 10, 'size_plausibility': 6, 'query_match': 0}
+  reasons  : MP3 is widely compatible; 320kbps MP3 preferred; Artist tokens matched (2); Title tokens matched (6)
+  warnings : Missing duration for precise match checking; Target expects variant term(s) remix, but candidate filename does not show them
+
+[ 66] MP3  320kbps  16.2MB   425s   soulseekah         soulseek_tower\Sacred Spirit\Yeha-Noha\03 Ya-Na-Hana (Celebrate).mp3
+  source   : Sacred Spirit - Ya-Na-Hana
+  subscores: {'format': 52, 'duration': -2, 'filename': 10, 'size_plausibility': 6, 'query_match': 0}
+  reasons  : MP3 is widely compatible; 320kbps MP3 preferred; Artist tokens matched (2); Title tokens matched (4)
+  warnings : Missing duration for precise match checking; Target expects variant term(s) remix, but candidate filename does not show them
+
+[ 66] MP3  320kbps  16.2MB   425s   soulseekah         soulseek_tower\Non-Album\Sacred Spirit\Ya-Na-Hana (Celebrate).mp3
+  source   : Sacred Spirit - Ya-Na-Hana
+  subscores: {'format': 52, 'duration': -2, 'filename': 10, 'size_plausibility': 6, 'query_match': 0}
+  reasons  : MP3 is widely compatible; 320kbps MP3 preferred; Artist tokens matched (2); Title tokens matched (4)
+  warnings : Missing duration for precise match checking; Target expects variant term(s) remix, but candidate filename does not show them
+
+[ 66] MP3  320kbps  16.2MB   425s   roadrunner01       Comps\Sacred Spirit\VA -  Sacred Spirit, Chants And Dances Of The Native Americans [1994]\04 Celebrate Wild Rice (Ya-Na-Hana).mp3
+  source   : Sacred Spirit - Ya-Na-Hana
+  subscores: {'format': 52, 'duration': -2, 'filename': 10, 'size_plausibility': 6, 'query_match': 0}
+  reasons  : MP3 is widely compatible; 320kbps MP3 preferred; Artist tokens matched (2); Title tokens matched (6)
+  warnings : Missing duration for precise match checking; Target expects variant term(s) remix, but candidate filename does not show them
+
+[ 66] MP3  320kbps  16.2MB   425s   badmutti           -VA - Native American & New Age Music\Sacred Spirit - 1995 - Sacred Spirit Vol 1 - Chants and Dances Of The Native Americans\Sacred Spirit - 04 - Ya-na-hana (Celebrate Wild Rice).mp3
+  source   : Sacred Spirit - Ya-Na-Hana
+  subscores: {'format': 52, 'duration': -2, 'filename': 10, 'size_plausibility': 6, 'query_match': 0}
+  reasons  : MP3 is widely compatible; 320kbps MP3 preferred; Artist tokens matched (2); Title tokens matched (6)
+  warnings : Missing duration for precise match checking; Target expects variant term(s) remix, but candidate filename does not show them
+
+[ 66] MP3  320kbps  16.2MB   425s   mrextrafartypants  Music\Sacred Spirit\Sacred Spirit_ Chants And Dances Of The\1-04 Ya-Na-Hana (Celebrate Wild Rice.mp3
+  source   : Sacred Spirit - Ya-Na-Hana
+  subscores: {'format': 52, 'duration': -2, 'filename': 10, 'size_plausibility': 6, 'query_match': 0}
+  reasons  : MP3 is widely compatible; 320kbps MP3 preferred; Artist tokens matched (2); Title tokens matched (6)
+  warnings : Missing duration for precise match checking; Target expects variant term(s) remix, but candidate filename does not show them
+
+[ 58] MP3  256kbps  13.1MB   425s   formerbusboy       music\sacred spirit - chants and dances of the native americans (virgin, 1994)\04. Celebrate Wild Rice (Ya-Na-Hana).mp3
+  source   : Sacred Spirit - Ya-Na-Hana
+  subscores: {'format': 44, 'duration': -2, 'filename': 10, 'size_plausibility': 6, 'query_match': 0}
+  reasons  : MP3 is widely compatible; 256kbps MP3 is acceptable; Artist tokens matched (2); Title tokens matched (6)
+  warnings : Missing duration for precise match checking; Target expects variant term(s) remix, but candidate filename does not show them
+
+[ 46] MP3  192kbps  9.7MB    425s   badmutti           -VA - Native American & New Age Music\Sacred Spirit - 1994 - Yeha-Noha\yeha-noha - 03 - ya-na-hana (celebrate).mp3
+  source   : Sacred Spirit - Ya-Na-Hana
+  subscores: {'format': 32, 'duration': -2, 'filename': 10, 'size_plausibility': 6, 'query_match': 0}
+  reasons  : MP3 is widely compatible; Artist tokens matched (2); Title tokens matched (4); File size looks plausible (1.00x expected)
+  warnings : 192kbps MP3 is lower quality; Missing duration for precise match checking; Target expects variant term(s) remix, but candidate filename does not show them
+
+
+================================================================================
+Track: Sacred Spirit, Mark Brydon - Heya-Hee (Intertribal Song To Stop The Rain) - Dubbery (2011)
+Exact query   : Sacred Spirit, Mark Brydon - Heya-Hee (Intertribal Song To Stop The Rain) - Dubbery
+Fallback query: Sacred Spirit - Heya-Hee
+================================================================================
+
+Search started: 464f885c-c3bc-440b-8536-d22026355be8
+State: InProgress | Responses: 0
+State: InProgress | Responses: 0
+State: InProgress | Responses: 0
+State: InProgress | Responses: 0
+State: InProgress | Responses: 0
+State: InProgress | Responses: 0
+State: InProgress | Responses: 0
+State: InProgress | Responses: 0
+State: InProgress | Responses: 0
+State: InProgress | Responses: 0
+State: InProgress | Responses: 0
+State: InProgress | Responses: 0
+State: InProgress | Responses: 0
+State: InProgress | Responses: 0
+State: Completed, TimedOut | Responses: 0
+Number of users: 0
+Exact search looked weak, trying fallback...
+
+Search started: 2f9843d9-7dbe-4101-a256-a9631022f2e8
+State: InProgress | Responses: 4
+State: InProgress | Responses: 27
+State: InProgress | Responses: 29
+State: InProgress | Responses: 29
+State: InProgress | Responses: 29
+State: InProgress | Responses: 29
+State: InProgress | Responses: 29
+State: InProgress | Responses: 29
+State: InProgress | Responses: 30
+State: InProgress | Responses: 30
+State: InProgress | Responses: 30
+State: InProgress | Responses: 30
+State: InProgress | Responses: 30
+State: InProgress | Responses: 30
+State: InProgress | Responses: 30
+State: InProgress | Responses: 30
+State: InProgress | Responses: 30
+State: InProgress | Responses: 30
+State: InProgress | Responses: 30
+State: InProgress | Responses: 30
+State: InProgress | Responses: 30
+State: InProgress | Responses: 30
+State: Completed, TimedOut | Responses: 30
+Number of users: 30
+[ 66] MP3  320kbps  19.2MB   467s   oempaloempa0101    Lounge\Sacred Spirit - Chants And Dances Of The Native Americans\Sacred Spirit - Heya-Hee (Intertribal Song to Stop the Rain).mp3
+  source   : Sacred Spirit - Heya-Hee
+  subscores: {'format': 52, 'duration': -2, 'filename': 10, 'size_plausibility': 6, 'query_match': 0}
+  reasons  : MP3 is widely compatible; 320kbps MP3 preferred; Artist tokens matched (2); Title tokens matched (7)
+  warnings : Missing duration for precise match checking; Target expects variant term(s) dubbery, but candidate filename does not show them
+
+[ 66] MP3  320kbps  17.8MB   465s   SharingIsCaring    music\Sacred Spirit\Sacred Spirit_ Chants and Dances of the Native Americans\09 Heya-Hee (Intertribal Song to Stop the Rain).mp3
+  source   : Sacred Spirit - Heya-Hee
+  subscores: {'format': 52, 'duration': -2, 'filename': 10, 'size_plausibility': 6, 'query_match': 0}
+  reasons  : MP3 is widely compatible; 320kbps MP3 preferred; Artist tokens matched (2); Title tokens matched (7)
+  warnings : Missing duration for precise match checking; Target expects variant term(s) dubbery, but candidate filename does not show them
+
+[ 66] MP3  320kbps  17.8MB   465s   doofyxpqt          A\Music\Sacred Spirit - (11-CD Box Set)(320)\Sacred Spirit - Chant And Dances Of The Native Americans (1994)(320)\09. Sacred Spirit - Intertribal Song To Stop The Rain (Heya-Hee).mp3
+  source   : Sacred Spirit - Heya-Hee
+  subscores: {'format': 52, 'duration': -2, 'filename': 10, 'size_plausibility': 6, 'query_match': 0}
+  reasons  : MP3 is widely compatible; 320kbps MP3 preferred; Artist tokens matched (2); Title tokens matched (7)
+  warnings : Missing duration for precise match checking; Target expects variant term(s) dubbery, but candidate filename does not show them
+
+[ 66] MP3  320kbps  17.8MB   465s   roadrunner01       Comps\Sacred Spirit\VA -  Sacred Spirit, Chants And Dances Of The Native Americans [1994]\09 Intertribal Song To Stop The Rain (Heya-Hee).mp3
+  source   : Sacred Spirit - Heya-Hee
+  subscores: {'format': 52, 'duration': -2, 'filename': 10, 'size_plausibility': 6, 'query_match': 0}
+  reasons  : MP3 is widely compatible; 320kbps MP3 preferred; Artist tokens matched (2); Title tokens matched (7)
+  warnings : Missing duration for precise match checking; Target expects variant term(s) dubbery, but candidate filename does not show them
+
+[ 66] MP3  320kbps  17.7MB   464s   soulseekah         soulseek_tower\Sacred Spirit\Yeha-Noha\08 Heya-Hee (Intertribal Rain Song).mp3
+  source   : Sacred Spirit - Heya-Hee
+  subscores: {'format': 52, 'duration': -2, 'filename': 10, 'size_plausibility': 6, 'query_match': 0}
+  reasons  : MP3 is widely compatible; 320kbps MP3 preferred; Artist tokens matched (2); Title tokens matched (5)
+  warnings : Missing duration for precise match checking; Target expects variant term(s) dubbery, but candidate filename does not show them
+
+[ 66] MP3  320kbps  12.8MB   335s   darryll            -VA - A--\VA - 100 Original Hits - 2015 [320]\089. Sacred Spirit - Heya-Hee (Intertribal Song To Stop The Rain) (Edit).mp3
+  source   : Sacred Spirit - Heya-Hee
+  subscores: {'format': 52, 'duration': -2, 'filename': 10, 'size_plausibility': 6, 'query_match': 0}
+  reasons  : MP3 is widely compatible; 320kbps MP3 preferred; Artist tokens matched (2); Title tokens matched (7)
+  warnings : Missing duration for precise match checking; Target expects variant term(s) dubbery, but candidate filename does not show them
+
+[ 62] FLAC ?        29.1MB   348s   balmy              Music\Sacred Spirit\Sacred Spirit - Chants and Dances of the Native Americans (1994)\208 - Heya-hee (Intertribal Song to Stop the Rain) [Dubbery].flac
+  source   : Sacred Spirit - Heya-Hee
+  subscores: {'format': 24, 'duration': -2, 'filename': 40, 'size_plausibility': 0, 'query_match': 0}
+  reasons  : FLAC is lossless; Artist tokens matched (2); Title tokens matched (8); Title phrase matched
+  warnings : Some CDJ setups may not support FLAC reliably; Missing duration for precise match checking
+
+[ 58] MP3  256kbps  14.3MB   465s   formerbusboy       music\sacred spirit - chants and dances of the native americans (virgin, 1994)\09. Intertribal Song To Stop The Rain (Heya-Hee).mp3
+  source   : Sacred Spirit - Heya-Hee
+  subscores: {'format': 44, 'duration': -2, 'filename': 10, 'size_plausibility': 6, 'query_match': 0}
+  reasons  : MP3 is widely compatible; 256kbps MP3 is acceptable; Artist tokens matched (2); Title tokens matched (7)
+  warnings : Missing duration for precise match checking; Target expects variant term(s) dubbery, but candidate filename does not show them
+
+[ 56] MP3  320kbps  17.7MB   465s   darryll            -VA - A--\VA - 100% ENIGMATIC Hits Vol.1-12 - 2001 [320]\100% Enigmatic Hits Vol.6\07 Sacred Spirit - Heya-Hee.mp3
+  source   : Sacred Spirit - Heya-Hee
+  subscores: {'format': 52, 'duration': -2, 'filename': 0, 'size_plausibility': 6, 'query_match': 0}
+  reasons  : MP3 is widely compatible; 320kbps MP3 preferred; Artist tokens matched (2); Title tokens matched (2)
+  warnings : Missing duration for precise match checking; Target expects variant term(s) dubbery, but candidate filename does not show them
+
+[ 46] MP3  192kbps  10.7MB   465s   badmutti           -VA - Native American & New Age Music\Sacred Spirit - 1995 - Sacred Spirit Vol 1 - Chants and Dances Of The Native Americans\Sacred Spirit - 09 -  Heya-Hee (Intertribal Song to Stop the Rain).mp3
+  source   : Sacred Spirit - Heya-Hee
+  subscores: {'format': 32, 'duration': -2, 'filename': 10, 'size_plausibility': 6, 'query_match': 0}
+  reasons  : MP3 is widely compatible; Artist tokens matched (2); Title tokens matched (7); File size looks plausible (1.00x expected)
+  warnings : 192kbps MP3 is lower quality; Missing duration for precise match checking; Target expects variant term(s) dubbery, but candidate filename does not show them
+
+
+================================================================================
+Track: Adam F - F-Jam - Edit (1996)
+Exact query   : Adam F - F-Jam - Edit
+Fallback query: Adam F - F-Jam
+================================================================================
+
+Search started: eb977a3c-4606-470b-9764-e5cd4bdb17d7
+State: InProgress | Responses: 4
+State: InProgress | Responses: 40
+State: InProgress | Responses: 47
+State: InProgress | Responses: 47
+State: InProgress | Responses: 47
+State: InProgress | Responses: 48
+State: InProgress | Responses: 48
+State: InProgress | Responses: 48
+State: InProgress | Responses: 49
+State: InProgress | Responses: 49
+State: InProgress | Responses: 49
+State: InProgress | Responses: 49
+State: InProgress | Responses: 49
+State: InProgress | Responses: 50
+State: InProgress | Responses: 50
+State: InProgress | Responses: 50
+State: InProgress | Responses: 50
+State: InProgress | Responses: 50
+State: InProgress | Responses: 50
+State: InProgress | Responses: 50
+State: InProgress | Responses: 51
+State: InProgress | Responses: 51
+State: InProgress | Responses: 51
+State: InProgress | Responses: 51
+State: InProgress | Responses: 51
+State: InProgress | Responses: 51
+State: InProgress | Responses: 51
+State: InProgress | Responses: 51
+State: InProgress | Responses: 51
+State: InProgress | Responses: 51
+State: InProgress | Responses: 51
+State: InProgress | Responses: 51
+State: InProgress | Responses: 51
+State: InProgress | Responses: 51
+State: InProgress | Responses: 51
+State: Completed, TimedOut | Responses: 51
+Number of users: 49
+[ 85] MP3  320kbps  14.1MB   345s   SharingIsCaring    music\Adam F\1997-11-03 - Colours [ALBUM] (MP3)\01-10 - F-Jam (album edit) (320kbps)_pn.mp3
+  source   : Adam F - F-Jam - Edit
+  subscores: {'format': 52, 'duration': -2, 'filename': 25, 'size_plausibility': 6, 'query_match': 4}
+  reasons  : MP3 is widely compatible; 320kbps MP3 preferred; Artist tokens matched (1); Title tokens matched (3)
+  warnings : Missing duration for precise match checking
+
+[ 85] MP3  320kbps  13.3MB   345s   Lazuli             Music\Colours - Adam F\10 - F-Jam (Album Edit).mp3
+  source   : Adam F - F-Jam - Edit
+  subscores: {'format': 52, 'duration': -2, 'filename': 25, 'size_plausibility': 6, 'query_match': 4}
+  reasons  : MP3 is widely compatible; 320kbps MP3 preferred; Artist tokens matched (1); Title tokens matched (3)
+  warnings : Missing duration for precise match checking
+
+[ 85] MP3  320kbps  13.2MB   345s   darryll            -VA - A--\VA - 100 Original Hits - 2015 [320]\031. Adam f - F-Jam (Feat. MC Conrad) (Album Edit Short Version).mp3
+  source   : Adam F - F-Jam - Edit
+  subscores: {'format': 52, 'duration': -2, 'filename': 25, 'size_plausibility': 6, 'query_match': 4}
+  reasons  : MP3 is widely compatible; 320kbps MP3 preferred; Artist tokens matched (1); Title tokens matched (3)
+  warnings : Missing duration for precise match checking
+
+[ 85] MP3  320kbps  13.2MB   345s   tony_jungle        DnB\1997\(7243 8 21725 2 9) [1997] Adam F - Colours\10. Adam F - F-Jam (Album Edit) (ft. MC Conrad).mp3
+  source   : Adam F - F-Jam - Edit
+  subscores: {'format': 52, 'duration': -2, 'filename': 25, 'size_plausibility': 6, 'query_match': 4}
+  reasons  : MP3 is widely compatible; 320kbps MP3 preferred; Artist tokens matched (1); Title tokens matched (3)
+  warnings : Missing duration for precise match checking
+
+[ 85] MP3  320kbps  13.2MB   345s   fradge             complete\Adam F - Colours (Emi Records) (1995)\Adam F - F-Jam (Album Edit).mp3
+  source   : Adam F - F-Jam - Edit
+  subscores: {'format': 52, 'duration': -2, 'filename': 25, 'size_plausibility': 6, 'query_match': 4}
+  reasons  : MP3 is widely compatible; 320kbps MP3 preferred; Artist tokens matched (1); Title tokens matched (3)
+  warnings : Missing duration for precise match checking
+
+[ 85] MP3  320kbps  13.2MB   345s   djdragonherb       [[music]] review - 1\(DL) music & system DLs - review [524 GB]\VDJ 2020 [96 GB]\VDJ LIB\com\dnb\Adam F\Albums\1997 - Colours\10. Adam F - F-Jam (Album Edit).mp3
+  source   : Adam F - F-Jam - Edit
+  subscores: {'format': 52, 'duration': -2, 'filename': 25, 'size_plausibility': 6, 'query_match': 4}
+  reasons  : MP3 is widely compatible; 320kbps MP3 preferred; Artist tokens matched (1); Title tokens matched (3)
+  warnings : Missing duration for precise match checking
+
+[ 79] MP3  320kbps  13.2MB   345s   Nzd                Archive\Audio\Artist A-Z\F\F, Adam\Albums\1997 - Colours\10. F-Jam (ft. MC Conrad) (Album Edit).mp3
+  source   : Adam F - F-Jam - Edit
+  subscores: {'format': 52, 'duration': -2, 'filename': 19, 'size_plausibility': 6, 'query_match': 4}
+  reasons  : MP3 is widely compatible; 320kbps MP3 preferred; Artist tokens matched (1); Title tokens matched (3)
+  warnings : Missing duration for precise match checking
+
+[ 77] MP3  256kbps  10.6MB   345s   gamepak            Music\Adam F\Colours\10 F-Jam (Album Edit ft. MC Conrad).mp3
+  source   : Adam F - F-Jam - Edit
+  subscores: {'format': 44, 'duration': -2, 'filename': 25, 'size_plausibility': 6, 'query_match': 4}
+  reasons  : MP3 is widely compatible; 256kbps MP3 is acceptable; Artist tokens matched (1); Title tokens matched (3)
+  warnings : Missing duration for precise match checking
+
+[ 65] MP3  192kbps  8.0MB    345s   thlayli_x          Plex music\Adam F\(1997) Colours\10. F-Jam (Album Edit).mp3
+  source   : Adam F - F-Jam - Edit
+  subscores: {'format': 32, 'duration': -2, 'filename': 25, 'size_plausibility': 6, 'query_match': 4}
+  reasons  : MP3 is widely compatible; Artist tokens matched (1); Title tokens matched (3); Artist phrase matched
+  warnings : 192kbps MP3 is lower quality; Missing duration for precise match checking
+
+[ 65] MP3  192kbps  7.9MB    344s   tony_jungle        DnB\1997\Adam_F-Colours-TOCP4054-1997-sour\10-Adam_F_(feat_MC_Conrad)-F-Jam_(Album_Edit)-sour.mp3
+  source   : Adam F - F-Jam - Edit
+  subscores: {'format': 32, 'duration': -2, 'filename': 25, 'size_plausibility': 6, 'query_match': 4}
+  reasons  : MP3 is widely compatible; Artist tokens matched (1); Title tokens matched (3); Artist phrase matched
+  warnings : 192kbps MP3 is lower quality; Missing duration for precise match checking
+
+
+================================================================================
+Track: Awkward Corners, Sunju Hargun - In Slow Motion - Sunju Hargun Edit (2020)
+Exact query   : Awkward Corners, Sunju Hargun - In Slow Motion - Sunju Hargun Edit
+Fallback query: Awkward Corners - In Slow Motion
+================================================================================
+
+Search started: 8c2829a0-e5d2-40ba-89d9-5bd919856d2f
+State: InProgress | Responses: 0
+State: InProgress | Responses: 1
+State: InProgress | Responses: 1
+State: InProgress | Responses: 1
+State: InProgress | Responses: 1
+State: InProgress | Responses: 1
+State: InProgress | Responses: 1
+State: InProgress | Responses: 1
+State: InProgress | Responses: 1
+State: InProgress | Responses: 1
+State: InProgress | Responses: 1
+State: InProgress | Responses: 1
+State: InProgress | Responses: 1
+State: InProgress | Responses: 1
+State: InProgress | Responses: 1
+State: InProgress | Responses: 1
+State: Completed, TimedOut | Responses: 1
+Number of users: 1
+Exact search looked weak, trying fallback...
+
+Search started: 1235f86c-9841-46df-8a21-b36b52fbc3a9
+State: InProgress | Responses: 1
+State: InProgress | Responses: 3
+State: InProgress | Responses: 5
+State: InProgress | Responses: 5
+State: InProgress | Responses: 5
+State: InProgress | Responses: 5
+State: InProgress | Responses: 5
+State: InProgress | Responses: 5
+State: InProgress | Responses: 5
+State: InProgress | Responses: 5
+State: InProgress | Responses: 5
+State: InProgress | Responses: 5
+State: InProgress | Responses: 5
+State: InProgress | Responses: 5
+State: InProgress | Responses: 5
+State: InProgress | Responses: 5
+State: Completed, TimedOut | Responses: 5
+Number of users: 5
+[104] MP3  320kbps  13.9MB   359s   TauAs              m7\MP3-daily-2020-March-27-Electronic\VA-Bongo_Beats_and_Bankruptcy_The_Sound_of_Im_a_Cliche-CLICHE067D-WEB-2020-MOHAWK\02-awkward_corners-in_slow_motion_(sunju_hargun_edit)-75854988.mp3
+  source   : Awkward Corners, Sunju Hargun - In Slow Motion - Sunju Hargun Edit
+  subscores: {'format': 52, 'duration': -2, 'filename': 44, 'size_plausibility': 6, 'query_match': 4}
+  reasons  : MP3 is widely compatible; 320kbps MP3 preferred; Artist tokens matched (4); Title tokens matched (6)
+  warnings : Missing duration for precise match checking
+
+[100] MP3  320kbps  13.9MB   358s   varislintu18       @@dcpdr\Music\Bongo Beats and Bankruptcy\VA-Bongo_Beats_and_Bankruptcy_The_Sound_of_Im_a_Cliche-CLICHE067D-WEB-2020-MOHAWK\02-awkward_corners-in_slow_motion_(sunju_hargun_edit)-75854988.mp3
+  source   : Awkward Corners - In Slow Motion
+  subscores: {'format': 52, 'duration': -2, 'filename': 44, 'size_plausibility': 6, 'query_match': 0}
+  reasons  : MP3 is widely compatible; 320kbps MP3 preferred; Artist tokens matched (4); Title tokens matched (6)
+  warnings : Missing duration for precise match checking
+
+[ 80] AIF  1536kbps 66.3MB   358s   Darrylrevok        @@puclh\SS Share 12\VA- Bong Beats and Bankruptcy - The Sound of I'm a Cliche\02 - Awkward Corners - In Slow Motion (Sunju Hargun Edit).aif
+  source   : Awkward Corners - In Slow Motion
+  subscores: {'format': 38, 'duration': -2, 'filename': 44, 'size_plausibility': 0, 'query_match': 0}
+  reasons  : AIF is highly CDJ-friendly; Artist tokens matched (4); Title tokens matched (6); Title phrase matched
+  warnings : Missing duration for precise match checking
+
+[ 68] MP3  128kbps  5.5MB    359s   lulufoundation     @@ddxxz\- Compilations\- Compilations Séries Labels\I'm A Cliché Record\Bongo Beats And Bankruptcy (The Sound Of I'm A Cliché)\02 - Awkward Corners - In Slow Motion (Sunju Hargun Edit).mp3
+  source   : Awkward Corners - In Slow Motion
+  subscores: {'format': 20, 'duration': -2, 'filename': 44, 'size_plausibility': 6, 'query_match': 0}
+  reasons  : MP3 is widely compatible; Artist tokens matched (4); Title tokens matched (6); Title phrase matched
+  warnings : 128kbps MP3 is lower quality; Missing duration for precise match checking
+
+
+================================================================================
+Track: Andy Martin, Lee "Scratch" Perry, Nit Yardman - Revolution - Nit Yardman Version (2022)
+Exact query   : Andy Martin, Lee "Scratch" Perry, Nit Yardman - Revolution - Nit Yardman Version
+Fallback query: Andy Martin - Revolution
+================================================================================
+
+Search started: e175705a-f281-4f7b-8001-eab0bbe68546
+State: InProgress | Responses: 0
+State: InProgress | Responses: 2
+State: InProgress | Responses: 3
+State: InProgress | Responses: 3
+State: InProgress | Responses: 3
+State: InProgress | Responses: 3
+State: InProgress | Responses: 3
+State: InProgress | Responses: 3
+State: InProgress | Responses: 3
+State: InProgress | Responses: 3
+State: InProgress | Responses: 3
+State: InProgress | Responses: 3
+State: InProgress | Responses: 3
+State: InProgress | Responses: 3
+State: InProgress | Responses: 3
+State: InProgress | Responses: 3
+State: Completed, TimedOut | Responses: 3
+Number of users: 3
+[104] MP3  320kbps  8.2MB    214s   koalabeer          Techno packs\2022\TECHNO-2022-02\Andy_Martin_Ft._Lee_Scratch_Perry_-_Revolution_(MA04)-WEB-2022-TR\02-andy_martin_ft._lee_scratch_perry_-_revolution_(nit_yardman_version)-tr.mp3
+  source   : Andy Martin, Lee "Scratch" Perry, Nit Yardman - Revolution - Nit Yardman Version
+  subscores: {'format': 52, 'duration': -2, 'filename': 44, 'size_plausibility': 6, 'query_match': 4}
+  reasons  : MP3 is widely compatible; 320kbps MP3 preferred; Artist tokens matched (7); Title tokens matched (4)
+  warnings : Missing duration for precise match checking
+
+[104] MP3  320kbps  8.2MB    214s   TauAs              m\MP3-daily-2022-February-18-Techno\Andy_Martin_Ft._Lee_Scratch_Perry_-_Revolution_MA04-WEB-2022-TR\02-andy_martin_ft._lee_scratch_perry_-_revolution_(nit_yardman_version)-tr.mp3
+  source   : Andy Martin, Lee "Scratch" Perry, Nit Yardman - Revolution - Nit Yardman Version
+  subscores: {'format': 52, 'duration': -2, 'filename': 44, 'size_plausibility': 6, 'query_match': 4}
+  reasons  : MP3 is widely compatible; 320kbps MP3 preferred; Artist tokens matched (7); Title tokens matched (4)
+  warnings : Missing duration for precise match checking
+
+[104] MP3  320kbps  8.2MB    214s   templeoftime       music_backup\Andy_Martin_Ft._Lee_Scratch_Perry_-_Revolution_MA04-WEB-2022-TR\02-andy_martin_ft._lee_scratch_perry_-_revolution_(nit_yardman_version)-tr.mp3
+  source   : Andy Martin, Lee "Scratch" Perry, Nit Yardman - Revolution - Nit Yardman Version
+  subscores: {'format': 52, 'duration': -2, 'filename': 44, 'size_plausibility': 6, 'query_match': 4}
+  reasons  : MP3 is widely compatible; 320kbps MP3 preferred; Artist tokens matched (7); Title tokens matched (4)
+  warnings : Missing duration for precise match checking
+
