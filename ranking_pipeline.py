@@ -44,6 +44,9 @@ class RankedCandidate(SearchCandidate):
 
 # Configure
 
+SAFE_AUDIO_EXTENSIONS = {"mp3", "wav", "aiff", "aif", "flac"}
+SUSPICIOUS_EXTENSIONS = {"exe", "bat", "cmd", "com", "scr", "js", "jar", "msi", "zip", "rar", "7z"}
+
 FORMAT_SCORES = {
     "wav": 40,
     "aiff": 38,
@@ -65,6 +68,16 @@ MP3_BITRATE_BONUS = {
     160: -4,
     128: -10,
 }
+
+VALID_FORMAT_PREFERENCES = {
+    "cdj_safe",
+    "mp3_preferred",
+    "lossless_preferred",
+    "wav_aiff_only",
+    "best_available",
+}
+
+WAV_AIFF_EXTENSIONS = {"wav", "aiff", "aif"}
 
 # Terms that usually meaning is not the  original track
 # accepted
@@ -93,6 +106,9 @@ EXPECTED_VARIANT_TERMS = {
 # & these penalised, so mix, edit, dub, version recognised but not immediately penalised
 GENERIC_PENALTY_VARIANT_TERMS = {
     "remix",
+    "edit",
+    "dub",
+    "club",
     "live",
     "karaoke",
     "instrumental",
@@ -103,6 +119,7 @@ GENERIC_PENALTY_VARIANT_TERMS = {
     "vs",
     "rework",
     "acapella",
+    "version",
 }
 
 NEGATIVE_FILENAME_TERMS = {
@@ -126,6 +143,20 @@ POSITIVE_FILENAME_TERMS = {
     "club mix": 8,
     "album version": 5,
     "full": 2,
+}
+
+UNEXPECTED_VERSION_PHRASE_PENALTIES = {
+    "club mix": -14,
+    "extended mix": -10,
+    "original mix": -4,
+    "radio edit": -10,
+    "dub mix": -12,
+    "vocal mix": -10,
+    "refix": -14,
+    "vip": -14,
+    "redux": -12,
+    "remaster": -8,
+    "anniversary": -10,
 }
 
 STOPWORDS = {
@@ -372,6 +403,10 @@ def score_format(candidate: SearchCandidate) -> tuple[int, list[str], list[str]]
     warnings: list[str] = []
 
     ext = (candidate.extension or "").lower()
+
+    if ext in SUSPICIOUS_EXTENSIONS:
+        return -100, reasons, [f"Suspicious non-audio extension: {ext.upper()}"]
+
     score = FORMAT_SCORES.get(ext, -5)
 
     if ext in {"wav", "aiff", "aif"}:
@@ -392,9 +427,101 @@ def score_format(candidate: SearchCandidate) -> tuple[int, list[str], list[str]]
             else:
                 warnings.append(f"{candidate.bitrate}kbps MP3 is lower quality")
     else:
-        warnings.append(f"Less preferred format: {ext or 'unknown'}")
+        warnings.append(f"Less preferred or unknown format: {ext or 'unknown'}")
 
     return score, reasons, warnings
+
+def normalize_format_preference(format_preference: str | None) -> str:
+    if not format_preference:
+        return "best_available"
+
+    normalized = format_preference.strip().lower()
+    if normalized in VALID_FORMAT_PREFERENCES:
+        return normalized
+
+    return "best_available"
+
+
+def candidate_allowed_by_format_preference(
+    candidate: SearchCandidate,
+    format_preference: str,
+) -> bool:
+    format_preference = normalize_format_preference(format_preference)
+    ext = (candidate.extension or "").lower()
+
+    if format_preference == "wav_aiff_only":
+        return ext in WAV_AIFF_EXTENSIONS
+
+    return True
+
+
+def score_format_preference(
+    candidate: SearchCandidate,
+    format_preference: str,
+) -> tuple[int, list[str], list[str]]:
+    reasons: list[str] = []
+    warnings: list[str] = []
+
+    format_preference = normalize_format_preference(format_preference)
+    ext = (candidate.extension or "").lower()
+    bitrate = candidate.bitrate or 0
+
+    if format_preference == "best_available":
+        return 0, reasons, warnings
+
+    if format_preference == "cdj_safe":
+        if ext == "wav":
+            return 16, ["WAV prioritised for CDJ-safe mode"], warnings
+        if ext in {"aiff", "aif"}:
+            return 14, ["AIFF prioritised for CDJ-safe mode"], warnings
+        if ext == "mp3":
+            if bitrate >= 320:
+                return 8, ["320kbps MP3 kept high in CDJ-safe mode"], warnings
+            if bitrate >= 256:
+                return 2, ["Higher-bitrate MP3 kept as fallback in CDJ-safe mode"], warnings
+            return -6, reasons, ["Lower-bitrate MP3 de-prioritised in CDJ-safe mode"]
+        if ext == "flac":
+            return -8, reasons, ["FLAC lowered in CDJ-safe mode"]
+        return -10, reasons, [f'{ext.upper() or "Unknown"} lowered in CDJ-safe mode']
+
+    if format_preference == "mp3_preferred":
+        if ext == "mp3":
+            if bitrate >= 320:
+                return 18, ["320kbps MP3 prioritised"], warnings
+            if bitrate >= 256:
+                return 12, ["256kbps MP3 prioritised after 320"], warnings
+            if bitrate >= 224:
+                return 7, ["224kbps MP3 kept above lower-bitrate MP3s"], warnings
+            if bitrate >= 192:
+                return 2, ["192kbps MP3 kept above lower MP3s"], warnings
+            return -4, reasons, ["Low-bitrate MP3 de-prioritised in MP3-preferred mode"]
+        if ext in WAV_AIFF_EXTENSIONS:
+            return -8, reasons, ["Lossless file lowered because MP3 is preferred"]
+        if ext == "flac":
+            return -10, reasons, ["FLAC lowered because MP3 is preferred"]
+        return -12, reasons, ["Non-MP3 format de-prioritised in MP3-preferred mode"]
+
+    if format_preference == "lossless_preferred":
+        if ext == "wav":
+            return 18, ["WAV prioritised in lossless-preferred mode"], warnings
+        if ext in {"aiff", "aif"}:
+            return 16, ["AIFF prioritised in lossless-preferred mode"], warnings
+        if ext == "flac":
+            return 32, ["FLAC prioritised in lossless-preferred mode"], warnings
+        if ext == "mp3":
+            if bitrate >= 320:
+                return 2, ["320kbps MP3 kept as the strongest non-lossless fallback"], warnings
+            return -10, reasons, ["Lower-bitrate MP3 de-prioritised in lossless-preferred mode"]
+        return -12, reasons, ["Non-lossless format de-prioritised in lossless-preferred mode"]
+
+    if format_preference == "wav_aiff_only":
+        if ext == "wav":
+            return 8, ["WAV allowed by strict WAV/AIFF mode"], warnings
+        if ext in {"aiff", "aif"}:
+            return 8, ["AIFF allowed by strict WAV/AIFF mode"], warnings
+        return 0, reasons, warnings
+
+    return 0, reasons, warnings
 
 
 def score_duration(track: SpotifyTrack, candidate: SearchCandidate) -> tuple[int, list[str], list[str]]:
@@ -434,6 +561,20 @@ def extract_expected_variant_terms(track: SpotifyTrack) -> set[str]:
 
     return expected
 
+def extract_expected_variant_phrases(track: SpotifyTrack) -> set[str]:
+    title_norm = normalize_text(track.title)
+    expected_phrases: set[str] = set()
+
+    for phrase in UNEXPECTED_VERSION_PHRASE_PENALTIES.keys():
+        if contains_whole_phrase(title_norm, phrase):
+            expected_phrases.add(phrase)
+
+    for phrase in POSITIVE_FILENAME_TERMS.keys():
+        if contains_whole_phrase(title_norm, phrase):
+            expected_phrases.add(phrase)
+
+    return expected_phrases
+
 def phrase_in_text(phrase, text):
     return re.search(r"\b" + re.escape(phrase) + r"\b", text) is not None
 
@@ -442,11 +583,14 @@ def score_filename(track: SpotifyTrack, candidate: SearchCandidate) -> tuple[int
     warnings: list[str] = []
 
     filename_norm = normalize_filename_for_match(candidate.filename)
-    filename_words = filename_norm.split()
+    basename_norm = normalize_filename_for_match(get_filename_basename(candidate.filename))
+    basename_only = get_filename_basename(candidate.filename)
+    filename_words = basename_norm.split()
 
     artist_tokens = artist_tokens_for_match(track.artist)
     title_tokens = tokenize(track.title)
     expected_variant_terms = extract_expected_variant_terms(track)
+    expected_variant_phrases = extract_expected_variant_phrases(track)
 
     score = 0
 
@@ -464,24 +608,31 @@ def score_filename(track: SpotifyTrack, candidate: SearchCandidate) -> tuple[int
         reasons.append(f"Title tokens matched ({title_hits})")
 
     # Strong phrase matches
-    if contains_phrase(candidate.filename, track.artist):
+    if contains_phrase(basename_only, track.artist):
         score += 6
         reasons.append("Artist phrase matched")
 
-    if contains_phrase(candidate.filename, track.title):
+    if contains_phrase(basename_only, track.title):
         score += 12
         reasons.append("Title phrase matched")
 
-    if contains_phrase(candidate.filename, f"{track.artist} {track.title}"):
+    if contains_phrase(basename_only, f"{track.artist} {track.title}"):
         score += 8
         reasons.append("Artist + title strongly matched")
 
-    # Positive phrases
+    # Positive phrases: only reward them if the target title appears to expect them
     for phrase, bonus in POSITIVE_FILENAME_TERMS.items():
-        if contains_whole_phrase(filename_norm, phrase):
-            # Only reward "original mix" / etc. lightly unless the target expects a variant
-            score += bonus
-            reasons.append(f'Contains "{phrase}"')
+        if contains_whole_phrase(basename_norm, phrase):
+            if phrase in expected_variant_phrases:
+                score += bonus
+                reasons.append(f'Target expects "{phrase}"')
+
+    # Penalise phrase-level version markers unless the target expects them
+    for phrase, penalty in UNEXPECTED_VERSION_PHRASE_PENALTIES.items():
+        if contains_whole_phrase(basename_norm, phrase):
+            if phrase not in expected_variant_phrases:
+                score += penalty
+                warnings.append(f'Unexpected "{phrase}" in filename')
 
     # Negative phrases, unless target explicitly expects them
     for phrase, penalty in NEGATIVE_FILENAME_TERMS.items():
@@ -502,11 +653,10 @@ def score_filename(track: SpotifyTrack, candidate: SearchCandidate) -> tuple[int
 
     # Generic unexpected variant terms
     for term in GENERIC_PENALTY_VARIANT_TERMS:
-        if contains_whole_phrase(filename_norm, term):
+        if contains_whole_phrase(basename_norm, term):
             if term not in expected_variant_terms:
-                # Prevent double-penalizing obvious phrases already handled above
-                    score -= 3
-                    warnings.append(f'Unexpected variant term "{term}"')
+                score -= 5
+                warnings.append(f'Unexpected variant term "{term}"')
 
     # Penalise candidates that look like the plain/original version
     # when the target title clearly expects a variant.
@@ -557,7 +707,11 @@ def score_size_plausibility(track: SpotifyTrack, candidate: SearchCandidate) -> 
     return 0, reasons, ["Unusually large MP3; may include extra metadata or be oddly encoded"]
 
 
-def score_candidate(track: SpotifyTrack, candidate: SearchCandidate) -> RankedCandidate:
+def score_candidate(
+    track: SpotifyTrack,
+    candidate: SearchCandidate,
+    format_preference: str = "best_available",
+) -> RankedCandidate:
     ranked = RankedCandidate(**asdict(candidate))
 
     total = 0
@@ -568,6 +722,12 @@ def score_candidate(track: SpotifyTrack, candidate: SearchCandidate) -> RankedCa
     format_score, r, w = score_format(candidate)
     subscores["format"] = format_score
     total += format_score
+    reasons.extend(r)
+    warnings.extend(w)
+
+    preference_score, r, w = score_format_preference(candidate, format_preference)
+    subscores["format_preference"] = preference_score
+    total += preference_score
     reasons.extend(r)
     warnings.extend(w)
 
@@ -589,7 +749,6 @@ def score_candidate(track: SpotifyTrack, candidate: SearchCandidate) -> RankedCa
     reasons.extend(r)
     warnings.extend(w)
 
-    # Small bonus if source query looked close to target
     if candidate.source_query:
         query_norm = normalize_text(candidate.source_query)
         target_norm = normalize_text(f"{track.artist} {track.title}")
@@ -605,7 +764,6 @@ def score_candidate(track: SpotifyTrack, candidate: SearchCandidate) -> RankedCa
     ranked.reasons = dedupe_strings(reasons)
     ranked.warnings = dedupe_strings(warnings)
     return ranked
-
 
 def dedupe_strings(items: list[str]) -> list[str]:
     seen: set[str] = set()
@@ -649,8 +807,20 @@ def rank_candidates_for_track(
     track: SpotifyTrack,
     candidates: list[SearchCandidate],
     top_n: int | None = None,
+    format_preference: str = "best_available",
 ) -> list[RankedCandidate]:
-    ranked = [score_candidate(track, c) for c in candidates]
+    normalized_preference = normalize_format_preference(format_preference)
+
+    filtered_candidates = [
+        candidate
+        for candidate in candidates
+        if candidate_allowed_by_format_preference(candidate, normalized_preference)
+    ]
+
+    ranked = [
+        score_candidate(track, candidate, format_preference=normalized_preference)
+        for candidate in filtered_candidates
+    ]
     ranked = dedupe_ranked_candidates(ranked)
 
     ranked.sort(
