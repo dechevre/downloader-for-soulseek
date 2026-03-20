@@ -31,3 +31,5 @@ playlists/*_cleaned.txt
 # Optional local exports
 holding_pen_selections.json
 holding_pen_selections.csv
+
+.spotify_cache
