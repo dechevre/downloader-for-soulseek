@@ -1,0 +1,106 @@
+body {
+  margin: 0;
+  background: #7a7a7a;
+  font-family: monospace;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.app {
+  min-height: 100vh;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.header-shell {
+  display: flex;
+  justify-content: center;
+}
+
+.header-frame {
+  display: inline-block;
+}
+
+.outer-frame {
+  border: 6px solid #4cff72;
+  padding: 8px;
+}
+
+.middle-frame {
+  border: 2px solid #5f5f5f;
+  padding: 8px;
+}
+
+.inner-frame {
+  border: 4px solid #8aff9b;
+  padding: 20px 36px;
+  background: #111111;
+}
+
+.title {
+  margin: 0;
+  color: #8aff9b;
+  letter-spacing: 0.2em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.playlist-panel {
+  display: flex;
+  justify-content: center;
+}
+
+.playlist-list {
+  width: 100%;
+  max-width: 1000px;
+  height: 70vh;
+  overflow-y: auto;
+  border: 3px solid #2e2e2e;
+  background: #1a1a1a;
+  padding: 8px;
+}
+
+.track-row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  align-items: center;
+  background: transparent;
+  color: #8aff9b;
+  border: 1px solid #2f2f2f;
+  padding: 12px;
+  text-align: left;
+  font-family: monospace;
+  cursor: pointer;
+}
+
+.track-row + .track-row {
+  margin-top: 6px;
+}
+
+.track-row:hover {
+  background: #243024;
+}
+
+.track-row.selected {
+  background: #3a4f3a;
+  border-color: #8aff9b;
+}
+
+.track-index {
+  color: #bdbdbd;
+}
+
+.track-meta {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.separator {
+  color: #4cff72;
+}

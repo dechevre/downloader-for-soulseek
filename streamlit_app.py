@@ -1,41 +1,64 @@
 from __future__ import annotations
 
-import csv
-import hashlib
-import inspect
 import json
-import re
-from io import StringIO
 from typing import Any
 
-import requests
 import streamlit as st
-from bs4 import BeautifulSoup
 
 import soulseek_client
-from track_processor import process_track, spotify_track_from_dict
-
+from candidate_utils import candidate_safety_notes
+from decision_logic import (
+    clear_decision,
+    decision_for_index,
+    get_selected_candidates,
+    mark_track,
+    save_selected_candidate,
+    status_for_index,
+)
+from download_manager import (
+    enqueue_selected_downloads,
+    get_candidate_download_status,
+    refresh_download_status_cache,
+    retry_errored_tracks_with_next_candidate,
+)
+from export_utils import build_export_rows, export_rows_to_csv
+from playlist_loader import (
+    extract_playlist_id,
+    fetch_playlist_track_ids_from_url,
+    fetch_tracks_from_track_ids,
+    load_tracks_from_uploaded_file,
+    parse_pasted_playlist_text,
+    playlist_signature,
+    tracks_to_cleaned_txt,
+)
+from state import (
+    AUTO_RETRY_ERRORED_KEY,
+    CURRENT_INDEX_KEY,
+    FORMAT_PREFERENCE_KEY,
+    PLAYLIST_SIG_KEY,
+    PLAYLIST_SOURCE_SIG_KEY,
+    SEARCH_RETRY_COUNT_KEY,
+    SEARCH_TIMEOUT_KEY,
+    SLSKD_BASE_URL_KEY,
+    SLSKD_PASSWORD_KEY,
+    SLSKD_USERNAME_KEY,
+    ensure_playlist_state,
+    get_decisions,
+    get_download_status_cache,
+    get_results,
+    get_tracks,
+)
+from track_search import (
+    auto_search_pending_tracks,
+    display_name_for_raw_track,
+    process_track_for_index,
+    result_for_index,
+    track_from_raw,
+)
 
 st.set_page_config(page_title="DJ Track Downloader Holding Pen", layout="wide")
 
 
-RESULTS_KEY = "holding_pen_results"
-DECISIONS_KEY = "holding_pen_decisions"
-PLAYLIST_KEY = "holding_pen_playlist"
-PLAYLIST_SIG_KEY = "holding_pen_playlist_sig"
-CURRENT_INDEX_KEY = "holding_pen_current_index"
-FORMAT_PREFERENCE_KEY = "holding_pen_format_preference"
-SLSKD_BASE_URL_KEY = "holding_pen_slskd_base_url"
-SLSKD_USERNAME_KEY = "holding_pen_slskd_username"
-SLSKD_PASSWORD_KEY = "holding_pen_slskd_password"
-SEARCH_TIMEOUT_KEY = "holding_pen_search_timeout"
-SEARCH_RETRY_COUNT_KEY = "holding_pen_search_retry_count"
-DOWNLOAD_STATUS_CACHE_KEY = "holding_pen_download_status_cache"
-DOWNLOAD_ATTEMPTS_KEY = "holding_pen_download_attempts"
-AUTO_RETRY_ERRORED_KEY = "holding_pen_auto_retry_errored"
-
-SAFE_AUDIO_EXTENSIONS = {"mp3", "wav", "aiff", "aif", "flac"}
-SUSPICIOUS_EXTENSIONS = {"exe", "bat", "cmd", "com", "scr", "js", "jar", "msi", "zip", "rar", "7z"}
 
 FORMAT_PREFERENCE_OPTIONS = {
     "CDJ-safe (WAV/AIFF/MP3 320 first, FLAC lower)": "cdj_safe",
@@ -46,553 +69,6 @@ FORMAT_PREFERENCE_OPTIONS = {
 }
 
 
-def playlist_signature(raw_bytes: bytes) -> str:
-    return hashlib.sha256(raw_bytes).hexdigest()
-
-
-def extract_track_ids(text: str) -> list[str]:
-    ids: list[str] = []
-    lines = text.strip().split("\n")
-
-    for line in lines:
-        line = line.strip()
-        if "/track/" in line:
-            try:
-                track_id = line.split("/track/")[1].split("?")[0]
-                ids.append(track_id)
-            except IndexError:
-                pass
-
-    return ids
-
-
-def extract_playlist_id(text: str) -> str | None:
-    text = text.strip()
-
-    match = re.search(r"spotify\.com/playlist/([A-Za-z0-9]+)", text)
-    if match:
-        return match.group(1)
-
-    match = re.search(r"spotify:playlist:([A-Za-z0-9]+)", text)
-    if match:
-        return match.group(1)
-
-    return None
-
-
-def fetch_track_data(track_id: str) -> dict[str, Any] | None:
-    url = f"https://open.spotify.com/track/{track_id}"
-    headers = {"User-Agent": "Mozilla/5.0"}
-
-    response = requests.get(url, headers=headers, timeout=20)
-    if response.status_code != 200:
-        return None
-
-    soup = BeautifulSoup(response.text, "html.parser")
-    script_tag = soup.find("script", type="application/ld+json")
-    if not script_tag or not script_tag.string:
-        return None
-
-    data = json.loads(script_tag.string)
-
-    track_name = data.get("name", "")
-    release_date = data.get("datePublished", "")
-    year = release_date[:4] if release_date else ""
-    description = data.get("description", "")
-
-    artist = ""
-    segments = [seg.strip() for seg in description.split("·")]
-    if len(segments) >= 2:
-        artist = segments[1]
-
-    return {
-        "spotify_id": track_id,
-        "artist": artist,
-        "title": track_name,
-        "year": year,
-    }
-
-
-def fetch_playlist_track_ids_from_url(playlist_url: str) -> list[str]:
-    headers = {"User-Agent": "Mozilla/5.0"}
-    response = requests.get(playlist_url, headers=headers, timeout=20)
-    response.raise_for_status()
-
-    html = response.text
-    track_ids = re.findall(r"open\.spotify\.com/track/([A-Za-z0-9]+)", html)
-    if not track_ids:
-        track_ids = re.findall(r"spotify:track:([A-Za-z0-9]+)", html)
-
-    deduped: list[str] = []
-    seen: set[str] = set()
-    for track_id in track_ids:
-        if track_id not in seen:
-            seen.add(track_id)
-            deduped.append(track_id)
-
-    return deduped
-
-
-def fetch_tracks_from_track_ids(track_ids: list[str], progress_label: str) -> list[dict[str, Any]]:
-    tracks: list[dict[str, Any]] = []
-    progress = st.progress(0.0)
-    status = st.empty()
-
-    for i, track_id in enumerate(track_ids, start=1):
-        status.write(f"{progress_label} {i}/{len(track_ids)}: {track_id}")
-        track_info = fetch_track_data(track_id)
-        if track_info:
-            tracks.append(track_info)
-        progress.progress(i / len(track_ids))
-
-    status.write(f"Loaded {len(tracks)} tracks.")
-    return tracks
-
-
-def parse_pasted_track_line(line: str) -> dict[str, Any] | None:
-    working = line.strip()
-    if not working:
-        return None
-
-    year = None
-
-    paren_match = re.match(r"^(.*?)\s*\((19|20)\d{2}\)\s*$", working)
-    if paren_match:
-        year = working[-5:-1]
-        working = paren_match.group(1).strip()
-    else:
-        dash_match = re.match(r"^(.*)\s-\s((19|20)\d{2})$", working)
-        if dash_match:
-            year = dash_match.group(2)
-            working = dash_match.group(1).strip()
-
-    if " - " not in working:
-        return None
-
-    artist, title = working.split(" - ", 1)
-    artist = artist.strip()
-    title = title.strip()
-
-    if not artist or not title:
-        return None
-
-    return {
-        "spotify_id": None,
-        "artist": artist,
-        "title": title,
-        "year": year,
-    }
-
-
-def parse_pasted_playlist_text(text: str) -> list[dict[str, Any]]:
-    tracks: list[dict[str, Any]] = []
-
-    for line in text.splitlines():
-        parsed = parse_pasted_track_line(line)
-        if parsed:
-            tracks.append(parsed)
-
-    return tracks
-
-
-def load_tracks_from_uploaded_file(uploaded_file) -> list[dict[str, Any]]:
-    suffix = uploaded_file.name.lower().rsplit(".", 1)[-1]
-    raw_bytes = uploaded_file.getvalue()
-
-    if suffix == "json":
-        parsed = json.loads(raw_bytes.decode("utf-8"))
-        if not isinstance(parsed, list):
-            raise ValueError("Expected the uploaded JSON to contain a list of tracks.")
-        return parsed
-
-    if suffix == "txt":
-        text = raw_bytes.decode("utf-8")
-        track_ids = extract_track_ids(text)
-        if not track_ids:
-            raise ValueError("No Spotify track links were found in the uploaded TXT file.")
-        return fetch_tracks_from_track_ids(track_ids, "Fetching Spotify track metadata")
-
-    raise ValueError("Unsupported file type. Please upload a .json or .txt file.")
-
-
-def tracks_to_cleaned_txt(tracks: list[dict[str, Any]]) -> str:
-    lines: list[str] = []
-
-    for track in tracks:
-        artist = str(track.get("artist") or "").strip()
-        title = str(track.get("title") or "").strip()
-        year = str(track.get("year") or "").strip()
-
-        if not artist or not title:
-            continue
-
-        if year:
-            lines.append(f"{artist} - {title} ({year})")
-        else:
-            lines.append(f"{artist} - {title}")
-
-    return "\n".join(lines)
-
-
-def reset_playlist_state(signature: str, tracks: list[dict[str, Any]]) -> None:
-    st.session_state[PLAYLIST_SIG_KEY] = signature
-    st.session_state[PLAYLIST_KEY] = tracks
-    st.session_state[RESULTS_KEY] = {}
-    st.session_state[DECISIONS_KEY] = {}
-    st.session_state[CURRENT_INDEX_KEY] = 0
-
-
-def ensure_playlist_state(signature: str, tracks: list[dict[str, Any]]) -> None:
-    current_sig = st.session_state.get(PLAYLIST_SIG_KEY)
-    if current_sig != signature:
-        reset_playlist_state(signature, tracks)
-
-    st.session_state.setdefault(RESULTS_KEY, {})
-    st.session_state.setdefault(DECISIONS_KEY, {})
-    st.session_state.setdefault(CURRENT_INDEX_KEY, 0)
-
-
-def get_tracks() -> list[dict[str, Any]]:
-    return st.session_state.get(PLAYLIST_KEY, [])
-
-
-def get_results() -> dict[int, dict[str, Any]]:
-    return st.session_state.get(RESULTS_KEY, {})
-
-
-def get_decisions() -> dict[int, dict[str, Any]]:
-    return st.session_state.get(DECISIONS_KEY, {})
-
-
-def get_format_preference() -> str:
-    return st.session_state.get(FORMAT_PREFERENCE_KEY, "cdj_safe")
-
-
-def get_search_timeout() -> int:
-    return int(st.session_state.get(SEARCH_TIMEOUT_KEY, 45))
-
-
-def get_search_retry_count() -> int:
-    return int(st.session_state.get(SEARCH_RETRY_COUNT_KEY, 1))
-
-
-def apply_soulseek_settings() -> None:
-    soulseek_client.BASE_URL = st.session_state.get(SLSKD_BASE_URL_KEY, soulseek_client.BASE_URL)
-    soulseek_client.UI_USERNAME = st.session_state.get(SLSKD_USERNAME_KEY, soulseek_client.UI_USERNAME)
-    soulseek_client.UI_PASSWORD = st.session_state.get(SLSKD_PASSWORD_KEY, soulseek_client.UI_PASSWORD)
-
-
-def candidate_safety_notes(candidate: dict[str, Any]) -> list[str]:
-    notes: list[str] = []
-
-    extension = str(candidate.get("extension") or "").lower()
-    bitrate = candidate.get("bitrate")
-    length = candidate.get("length")
-    size_mb = candidate.get("size_mb")
-
-    if extension in SAFE_AUDIO_EXTENSIONS:
-        notes.append(f"Audio file: {extension.upper()}")
-    elif extension in SUSPICIOUS_EXTENSIONS:
-        notes.append(f"Warning: suspicious extension {extension.upper()}")
-    else:
-        notes.append(f"Unknown or less common extension: {extension.upper() or '?'}")
-
-    if bitrate:
-        notes.append(f"Bitrate: {bitrate}kbps")
-    else:
-        notes.append("Bitrate missing")
-
-    if length:
-        notes.append(f"Length: {length}s")
-    else:
-        notes.append("Length missing")
-
-    if size_mb:
-        notes.append(f"Size: {size_mb}MB")
-    else:
-        notes.append("Size missing")
-
-    return notes
-
-
-def get_selected_candidates() -> list[dict[str, Any]]:
-    decisions = get_decisions()
-    selected: list[dict[str, Any]] = []
-
-    for decision in decisions.values():
-        if decision.get("decision") == "selected" and decision.get("candidate"):
-            selected.append(decision["candidate"])
-
-    return selected
-
-
-def candidate_key(username: str | None, filename: str | None) -> str:
-    return f"{username or ''}||{filename or ''}"
-
-
-def get_download_attempts() -> dict[str, list[int]]:
-    return st.session_state.setdefault(DOWNLOAD_ATTEMPTS_KEY, {})
-
-
-def remember_download_attempt(track_index: int, candidate_index: int) -> None:
-    attempts = get_download_attempts()
-    key = str(track_index)
-    attempts.setdefault(key, [])
-    if candidate_index not in attempts[key]:
-        attempts[key].append(candidate_index)
-    st.session_state[DOWNLOAD_ATTEMPTS_KEY] = attempts
-
-
-def get_attempted_candidate_indexes(track_index: int) -> list[int]:
-    return get_download_attempts().get(str(track_index), [])
-
-
-def get_download_status_cache() -> dict[str, dict[str, Any]]:
-    return st.session_state.setdefault(DOWNLOAD_STATUS_CACHE_KEY, {})
-
-
-def extract_download_entries(downloads_raw: Any) -> list[dict[str, Any]]:
-    if isinstance(downloads_raw, dict):
-        if isinstance(downloads_raw.get("downloads"), list):
-            items = downloads_raw["downloads"]
-        elif isinstance(downloads_raw.get("items"), list):
-            items = downloads_raw["items"]
-        else:
-            items = [downloads_raw]
-    elif isinstance(downloads_raw, list):
-        items = downloads_raw
-    else:
-        items = []
-
-    entries: list[dict[str, Any]] = []
-    for item in items:
-        if not isinstance(item, dict):
-            continue
-
-        if isinstance(item.get("files"), list):
-            group_user = item.get("username") or item.get("user")
-            for file_entry in item["files"]:
-                if isinstance(file_entry, dict):
-                    merged = dict(file_entry)
-                    if group_user and not merged.get("username"):
-                        merged["username"] = group_user
-                    entries.append(merged)
-        else:
-            entries.append(item)
-
-    return entries
-
-
-def extract_download_state(entry: dict[str, Any]) -> str:
-    state = entry.get("state") or entry.get("status")
-    if isinstance(state, dict):
-        parts = [str(state.get(part)) for part in ("local", "remote") if state.get(part)]
-        if parts:
-            return ", ".join(parts)
-    elif state:
-        return str(state)
-
-    local_state = entry.get("localState") or entry.get("local")
-    remote_state = entry.get("remoteState") or entry.get("remote")
-    parts = [str(part) for part in (local_state, remote_state) if part]
-    if parts:
-        return ", ".join(parts)
-
-    return "Unknown"
-
-
-def extract_download_error(entry: dict[str, Any]) -> str | None:
-    for key in ("errorMessage", "error", "message", "failureReason", "reason"):
-        value = entry.get(key)
-        if value:
-            return str(value)
-    return None
-
-
-def get_candidate_download_status(candidate: dict[str, Any]) -> dict[str, Any] | None:
-    return get_download_status_cache().get(
-        candidate_key(candidate.get("username"), candidate.get("filename"))
-    )
-
-
-def refresh_download_status_cache() -> tuple[int, list[str]]:
-    apply_soulseek_settings()
-
-    try:
-        downloads_raw = soulseek_client.get_downloads()
-    except Exception as exc:
-        return 0, [str(exc)]
-
-    entries = extract_download_entries(downloads_raw)
-    cache: dict[str, dict[str, Any]] = {}
-
-    for entry in entries:
-        username = entry.get("username") or entry.get("user")
-        filename = entry.get("filename") or entry.get("name") or entry.get("path")
-        if not username or not filename:
-            continue
-
-        cache[candidate_key(username, filename)] = {
-            "state": extract_download_state(entry),
-            "error": extract_download_error(entry),
-            "raw": entry,
-        }
-
-    st.session_state[DOWNLOAD_STATUS_CACHE_KEY] = cache
-    return len(cache), []
-
-
-def enqueue_candidate_for_track(track_index: int, candidate_index: int) -> str | None:
-    result = result_for_index(track_index)
-    if not result:
-        return "No result available for track"
-
-    candidates = result.get("ranked_candidates", [])
-    if candidate_index >= len(candidates):
-        return "Candidate index out of range"
-
-    candidate = candidates[candidate_index]
-    username = candidate.get("username")
-    filename = candidate.get("filename")
-    size = candidate.get("size")
-
-    if not username or not filename:
-        return "Missing username or filename"
-
-    try:
-        apply_soulseek_settings()
-        soulseek_client.enqueue_download(username=username, filename=filename, size=size)
-        remember_download_attempt(track_index, candidate_index)
-        save_selected_candidate(track_index, candidate_index)
-        return None
-    except Exception as exc:
-        remember_download_attempt(track_index, candidate_index)
-        return str(exc)
-
-
-def enqueue_selected_downloads() -> tuple[int, list[str]]:
-    decisions = get_decisions()
-    enqueued = 0
-    errors: list[str] = []
-
-    for track_index, decision in decisions.items():
-        if decision.get("decision") != "selected":
-            continue
-
-        candidate_index = decision.get("candidate_index")
-        if candidate_index is None:
-            continue
-
-        error = enqueue_candidate_for_track(int(track_index), int(candidate_index))
-        if error is None:
-            enqueued += 1
-        else:
-            candidate = decision.get("candidate", {})
-            errors.append(
-                f"{candidate.get('username')} :: {candidate.get('filename')} :: {error}"
-            )
-
-    return enqueued, errors
-
-
-def retry_errored_tracks_with_next_candidate() -> tuple[int, list[str]]:
-    retried = 0
-    errors: list[str] = []
-
-    for track_index, decision in get_decisions().items():
-        if decision.get("decision") != "selected":
-            continue
-
-        current_candidate = decision.get("candidate")
-        if not current_candidate:
-            continue
-
-        status = get_candidate_download_status(current_candidate)
-        if not status:
-            continue
-
-        state_text = str(status.get("state") or "").lower()
-        error_text = str(status.get("error") or "")
-        if "errored" not in state_text and not error_text:
-            continue
-
-        result = result_for_index(int(track_index))
-        if not result:
-            continue
-
-        candidates = result.get("ranked_candidates", [])
-        attempted = set(get_attempted_candidate_indexes(int(track_index)))
-        current_index = int(decision.get("candidate_index", -1))
-
-        retry_error: str | None = None
-        retried_this_track = False
-
-        for next_index in range(current_index + 1, len(candidates)):
-            if next_index in attempted:
-                continue
-
-            candidate = candidates[next_index]
-            ext = str(candidate.get("extension") or "").lower()
-            if ext in SUSPICIOUS_EXTENSIONS:
-                continue
-
-            retry_error = enqueue_candidate_for_track(int(track_index), next_index)
-            if retry_error is None:
-                retried += 1
-                retried_this_track = True
-                break
-
-        if not retried_this_track:
-            if retry_error:
-                errors.append(f"Track {int(track_index) + 1}: {retry_error}")
-            else:
-                errors.append(
-                    f"Track {int(track_index) + 1}: no untried alternative candidates available after errored download"
-                )
-
-    return retried, errors
-
-
-def track_from_raw(raw_track: dict[str, Any]):
-    return spotify_track_from_dict(raw_track)
-
-
-def display_name_for_raw_track(raw_track: dict[str, Any]) -> str:
-    return track_from_raw(raw_track).display_name
-
-
-def result_for_index(index: int) -> dict[str, Any] | None:
-    return get_results().get(index)
-
-
-def decision_for_index(index: int) -> dict[str, Any] | None:
-    return get_decisions().get(index)
-
-
-def status_for_index(index: int) -> str:
-    decision = decision_for_index(index)
-    result = result_for_index(index)
-
-    if decision:
-        decision_type = decision.get("decision")
-        if decision_type == "selected":
-            return "selected"
-        if decision_type == "skip":
-            return "skipped"
-        if decision_type == "not_found":
-            return "marked not found"
-
-    if result:
-        result_status = result.get("status")
-        if result_status == "error":
-            return "error"
-        if result_status == "found":
-            return "searched"
-        if result_status == "not_found":
-            return "no hits"
-        return "searched"
-
-    return "pending"
 
 
 def status_emoji(status: str) -> str:
@@ -608,93 +84,6 @@ def status_emoji(status: str) -> str:
     return mapping.get(status, "⚪")
 
 
-def process_track_for_index(index: int, force_refresh: bool = False) -> None:
-    results = get_results()
-    if index in results and not force_refresh:
-        return
-
-    raw_track = get_tracks()[index]
-    track = track_from_raw(raw_track)
-    format_preference = get_format_preference()
-    search_timeout = get_search_timeout()
-    retry_count = get_search_retry_count()
-
-    apply_soulseek_settings()
-
-    with st.spinner(f'Searching Soulseek for "{track.display_name}"...'):
-        try:
-            process_signature = inspect.signature(process_track)
-            process_kwargs: dict[str, Any] = {}
-
-            if "format_preference" in process_signature.parameters:
-                process_kwargs["format_preference"] = format_preference
-            if "search_timeout" in process_signature.parameters:
-                process_kwargs["search_timeout"] = search_timeout
-            if "retry_on_timeout" in process_signature.parameters:
-                process_kwargs["retry_on_timeout"] = retry_count
-
-            result = process_track(track, **process_kwargs)
-        except Exception as exc:
-            result = {
-                "track": {
-                    **raw_track,
-                    "display_name": track.display_name,
-                },
-                "status": "error",
-                "error": str(exc),
-                "queries": {
-                    "exact": None,
-                    "fallback": None,
-                    "used_fallback": False,
-                },
-                "counts": {
-                    "exact_candidates": 0,
-                    "fallback_candidates": 0,
-                    "total_candidates_before_ranking": 0,
-                    "ranked_candidates_returned": 0,
-                    "weak_exact_threshold": None,
-                },
-                "ranked_candidates": [],
-            }
-
-    result["format_preference"] = format_preference
-    result["search_timeout"] = search_timeout
-    result["retry_on_timeout"] = retry_count
-    results[index] = result
-    st.session_state[RESULTS_KEY] = results
-
-
-def save_selected_candidate(index: int, candidate_index: int) -> None:
-    result = result_for_index(index)
-    if not result:
-        return
-
-    candidates = result.get("ranked_candidates", [])
-    if candidate_index >= len(candidates):
-        return
-
-    candidate = candidates[candidate_index]
-    decisions = get_decisions()
-    decisions[index] = {
-        "decision": "selected",
-        "candidate_index": candidate_index,
-        "candidate": candidate,
-    }
-    st.session_state[DECISIONS_KEY] = decisions
-
-
-def mark_track(index: int, decision_type: str) -> None:
-    decisions = get_decisions()
-    decisions[index] = {"decision": decision_type}
-    st.session_state[DECISIONS_KEY] = decisions
-
-
-def clear_decision(index: int) -> None:
-    decisions = get_decisions()
-    decisions.pop(index, None)
-    st.session_state[DECISIONS_KEY] = decisions
-
-
 def go_previous() -> None:
     if st.session_state[CURRENT_INDEX_KEY] > 0:
         st.session_state[CURRENT_INDEX_KEY] -= 1
@@ -703,58 +92,6 @@ def go_previous() -> None:
 def go_next() -> None:
     if st.session_state[CURRENT_INDEX_KEY] < len(get_tracks()) - 1:
         st.session_state[CURRENT_INDEX_KEY] += 1
-
-
-def build_export_rows() -> list[dict[str, Any]]:
-    tracks = get_tracks()
-    results = get_results()
-    decisions = get_decisions()
-    rows: list[dict[str, Any]] = []
-
-    for index, raw_track in enumerate(tracks):
-        result = results.get(index, {})
-        decision = decisions.get(index, {})
-        candidate = decision.get("candidate", {}) if decision.get("decision") == "selected" else {}
-
-        row = {
-            "playlist_index": index,
-            "spotify_id": raw_track.get("spotify_id"),
-            "artist": raw_track.get("artist"),
-            "title": raw_track.get("title"),
-            "year": raw_track.get("year"),
-            "decision": decision.get("decision", "unreviewed"),
-            "search_status": result.get("status", "not_searched"),
-            "exact_query": (result.get("queries") or {}).get("exact"),
-            "fallback_query": (result.get("queries") or {}).get("fallback"),
-            "used_fallback": (result.get("queries") or {}).get("used_fallback"),
-            "candidate_index": decision.get("candidate_index"),
-            "candidate_filename": candidate.get("filename"),
-            "candidate_username": candidate.get("username"),
-            "candidate_extension": candidate.get("extension"),
-            "candidate_bitrate": candidate.get("bitrate"),
-            "candidate_length": candidate.get("length"),
-            "candidate_size": candidate.get("size"),
-            "candidate_size_mb": candidate.get("size_mb"),
-            "candidate_score": candidate.get("score"),
-            "candidate_source_query": candidate.get("source_query"),
-            "candidate_reasons": " | ".join(candidate.get("reasons", [])) if candidate else None,
-            "candidate_warnings": " | ".join(candidate.get("warnings", [])) if candidate else None,
-            "format_preference": result.get("format_preference"),
-        }
-        rows.append(row)
-
-    return rows
-
-
-def export_rows_to_csv(rows: list[dict[str, Any]]) -> str:
-    if not rows:
-        return ""
-
-    output = StringIO()
-    writer = csv.DictWriter(output, fieldnames=list(rows[0].keys()))
-    writer.writeheader()
-    writer.writerows(rows)
-    return output.getvalue()
 
 
 def render_sidebar(tracks: list[dict[str, Any]]) -> None:
@@ -951,27 +288,6 @@ def render_track_controls(index: int) -> None:
             st.rerun()
 
 
-def auto_search_pending_tracks() -> None:
-    tracks = get_tracks()
-    results = get_results()
-
-    pending_indexes = [idx for idx in range(len(tracks)) if idx not in results]
-    if not pending_indexes:
-        st.info("No pending tracks left to search.")
-        return
-
-    progress = st.progress(0.0)
-    status_text = st.empty()
-
-    for step, idx in enumerate(pending_indexes, start=1):
-        track = track_from_raw(tracks[idx])
-        status_text.write(f"Searching {step}/{len(pending_indexes)}: {track.display_name}")
-        process_track_for_index(idx, force_refresh=False)
-        progress.progress(step / len(pending_indexes))
-
-    status_text.write("Finished searching pending tracks.")
-
-
 def render_result_block(index: int) -> None:
     result = result_for_index(index)
 
@@ -1118,6 +434,7 @@ def main() -> None:
 
     parsed: list[dict[str, Any]] | None = None
     signature_source: bytes | None = None
+    signature: str | None = None
 
     if input_mode == "Spotify playlist URL":
         playlist_url = st.text_input(
@@ -1135,19 +452,32 @@ def main() -> None:
             return
 
         normalized_playlist_url = f"https://open.spotify.com/playlist/{playlist_id}"
-
-        try:
-            track_ids = fetch_playlist_track_ids_from_url(normalized_playlist_url)
-        except Exception as exc:
-            st.error(f"Could not fetch playlist page: {exc}")
-            return
-
-        if not track_ids:
-            st.error("No track IDs were found on the playlist page.")
-            return
-
-        parsed = fetch_tracks_from_track_ids(track_ids, "Fetching playlist track metadata")
         signature_source = normalized_playlist_url.encode("utf-8")
+
+        source_signature = playlist_signature(signature_source)
+        full_signature = playlist_signature(
+            signature_source + st.session_state[FORMAT_PREFERENCE_KEY].encode()
+        )
+
+        if st.session_state.get(PLAYLIST_SOURCE_SIG_KEY) == source_signature and get_tracks():
+            parsed = get_tracks()
+            signature = full_signature
+        else:
+            try:
+                track_ids = fetch_playlist_track_ids_from_url(normalized_playlist_url)
+            except Exception as exc:
+                st.error(f"Could not fetch playlist page: {exc}")
+                return
+
+            if not track_ids:
+                st.error("No track IDs were found on the playlist page.")
+                return
+
+            parsed = fetch_tracks_from_track_ids(
+                track_ids,
+                "Fetching playlist track metadata",
+            )
+            signature = full_signature
 
     elif input_mode == "Paste track list":
         pasted_tracks = st.text_area(
@@ -1234,8 +564,16 @@ def main() -> None:
             use_container_width=True,
         )
 
-    signature = playlist_signature(signature_source + st.session_state[FORMAT_PREFERENCE_KEY].encode())
-    ensure_playlist_state(signature, parsed)
+    if signature is None:
+        signature = playlist_signature(
+            signature_source + st.session_state[FORMAT_PREFERENCE_KEY].encode()
+        )
+
+    ensure_playlist_state(
+        signature,
+        parsed,
+        source_signature=source_signature if input_mode == "Spotify playlist URL" else None,
+    )
     tracks = get_tracks()
 
     if not tracks:
