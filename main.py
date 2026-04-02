@@ -1,15 +1,14 @@
+import asyncio
+import soulseek_client
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from playlist_loader import fetch_playlist_track_ids_from_url, fetch_tracks_from_track_ids, parse_pasted_playlist_text, extract_playlist_id
+from track_processor import process_track, spotify_track_from_dict
 
 app = FastAPI()
-
-
-class PlaylistRequest(BaseModel):
-    input_type: str  # "spotify_url" or "spotify_id"
-    input_value: str
 
 app.add_middleware(
     CORSMiddleware,
@@ -17,6 +16,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+semaphore  = asyncio.Semaphore(3)  # Limit to 5 concurrent track processing tasks
+
+class PlaylistRequest(BaseModel):
+    input_type: str  # "spotify_url" or "spotify_id"
+    input_value: str
 
 @app.get("/")
 def root():
@@ -37,4 +42,30 @@ def load_playlist(request: PlaylistRequest):
         return {"tracks": tracks}
     
     return {"error": "Unsupported input type"}
+
+
+@app.post("/search")
+async def search_tracks(track: dict):
+    async with semaphore:
+        try:
+            spotify_track = spotify_track_from_dict(track)
+            result = process_track(spotify_track, search_timeout=90)
+            return result
+        except Exception as e:
+            return {
+                "status": "error",
+                "error": str(e),
+                "ranked_candidates": [],
+                "counts": {"ranked_candidates_returned": 0}
+            }
+
+    
+@app.post("/download")
+def download_track(candidate: dict):
+    soulseek_client.enqueue_download(
+        username=candidate["username"],
+        filename=candidate["filename"],
+        size=candidate.get("size")
+    )
+    return {"status": "queued"}
 

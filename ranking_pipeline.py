@@ -586,6 +586,7 @@ def score_filename(track: SpotifyTrack, candidate: SearchCandidate) -> tuple[int
     basename_norm = normalize_filename_for_match(get_filename_basename(candidate.filename))
     basename_only = get_filename_basename(candidate.filename)
     filename_words = basename_norm.split()
+    fullpath_words = normalize_filename_for_match(candidate.filename).split()
 
     artist_tokens = artist_tokens_for_match(track.artist)
     title_tokens = tokenize(track.title)
@@ -595,7 +596,7 @@ def score_filename(track: SpotifyTrack, candidate: SearchCandidate) -> tuple[int
     score = 0
 
     # Artist/title token coverage
-    artist_hits = sum(1 for token in artist_tokens if token in filename_words)
+    artist_hits = sum(1 for token in artist_tokens if token in fullpath_words)
     if artist_hits:
         add = min(artist_hits * 4, 12)
         score += add
@@ -867,6 +868,8 @@ def generate_search_queries(track: SpotifyTrack, exact_query: str | None = None)
         fallback_query = "%s - %s" % (artist_first, title_core)
 
     queries.append(fallback_query)
+    queries.append(track.title)
+
 
     return unique_keep_order(queries)
 

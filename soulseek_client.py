@@ -30,7 +30,18 @@ def build_auth_headers(token: str) -> dict[str, str]:
 def search_soulseek(query: str, timeout: int = 45, poll_interval: float = 1.0) -> list[dict]:
     """
     Run a Soulseek search and return the /responses payload.
-    `timeout` is the total time allowed for the search to complete.
+
+    Exit strategy (in priority order):
+      1. Hard deadline exceeded (timeout seconds from search start).
+      2. State is Completed/ResponseLimitReached AND min_wait has passed AND
+         file count has been stable for STABLE_TICKS consecutive polls.
+      3. State is Completed with 0 files AND min_wait has passed (no results
+         are coming — bail quickly).
+
+    Deliberately NO early exit on InProgress: slskd marks a search InProgress
+    while peers are still sending results, and fetching /responses before the
+    state flips to Completed can return an empty or partial payload even with
+    a post-loop sleep.
     """
     token = get_token()
     headers = build_auth_headers(token)
@@ -44,11 +55,23 @@ def search_soulseek(query: str, timeout: int = 45, poll_interval: float = 1.0) -
     response.raise_for_status()
 
     search_id = response.json()["id"]
-    deadline = time.time() + timeout
+    start = time.time()
+    deadline = start + timeout
+    min_wait_until = start + 15  # never exit before 15 s regardless of state
+
+    # Stable-count detection: exit once file_count stops growing for N ticks
+    STABLE_TICKS = 3
+    last_file_count = -1
+    stable_ticks_seen = 0
+
+    print(f"[search] id={search_id} query={query!r} timeout={timeout}s")
 
     while True:
+        elapsed = time.time() - start
+
         if time.time() > deadline:
-            raise TimeoutError(f'Soulseek search timed out for query: "{query}"')
+            print(f"[search] deadline exceeded after {elapsed:.1f}s — fetching whatever we have")
+            break
 
         time.sleep(poll_interval)
 
@@ -61,9 +84,46 @@ def search_soulseek(query: str, timeout: int = 45, poll_interval: float = 1.0) -
 
         data = poll.json()
         state = data.get("state", "")
+        file_count = data.get("fileCount", 0)
+        response_count = data.get("responseCount", 0)
+        elapsed = time.time() - start
 
+        print(
+            f"[search] state={state} fileCount={file_count} "
+            f"responseCount={response_count} elapsed={elapsed:.1f}s "
+            f"stableTicks={stable_ticks_seen}/{STABLE_TICKS}"
+        )
+
+        past_min_wait = time.time() > min_wait_until
+
+        # ── Completed states ──────────────────────────────────────────────
         if "Completed" in state:
-            break
+            # No results at all and we've waited long enough — nothing coming
+            if file_count == 0 and past_min_wait:
+                print(f"[search] Completed with 0 files after min wait — exiting")
+                break
+
+            # Track whether the count is still growing
+            if file_count == last_file_count:
+                stable_ticks_seen += 1
+            else:
+                stable_ticks_seen = 0
+                last_file_count = file_count
+
+            # Exit once count is stable and min wait has passed
+            if past_min_wait and stable_ticks_seen >= STABLE_TICKS:
+                print(f"[search] Completed + stable count ({file_count}) for {STABLE_TICKS} ticks — exiting")
+                break
+
+        else:
+            # Not yet Completed — reset stable counter so it only counts
+            # ticks *after* the state has settled
+            stable_ticks_seen = 0
+            last_file_count = file_count
+
+    # Give slskd a moment to flush the final write to its response store.
+    # This is a safety net only — we should already be in Completed state.
+    time.sleep(1)
 
     results_response = requests.get(
         f"{BASE_URL}/api/v0/searches/{search_id}/responses",
@@ -71,8 +131,15 @@ def search_soulseek(query: str, timeout: int = 45, poll_interval: float = 1.0) -
         timeout=20,
     )
     results_response.raise_for_status()
+    raw = results_response.json()
+    print(
+        f"[results] type={type(raw).__name__} "
+        f"len={len(raw) if isinstance(raw, list) else 'N/A'} "
+        f"preview={str(raw)[:300]}"
+    )
 
-    return results_response.json()
+    return raw if isinstance(raw, list) else []
+
 
 def enqueue_download(username: str, filename: str, size: int | None = None) -> dict:
     token = get_token()

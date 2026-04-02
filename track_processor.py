@@ -103,6 +103,8 @@ def process_track(
         exact_responses,
         source_query=exact_query_used,
     )
+    print(f"[flatten] {track.display_name}: {len(exact_candidates)} candidates from {len(exact_responses)} responses")
+
 
     fallback_candidates: list[SearchCandidate] = []
     used_fallback = False
@@ -124,13 +126,37 @@ def process_track(
             source_query=fallback_query_used,
         )
 
-    all_candidates = [*exact_candidates, *fallback_candidates]
+    title_only_query = search_queries[2] if len(search_queries) > 2 else None
+    print(f"[title_only] query={title_only_query} exact={len(exact_candidates)} fallback={len(fallback_candidates)}")
+
+
+    title_only_candidates: list[SearchCandidate] = []
+
+    if (
+        title_only_query
+        and is_exact_search_weak(exact_candidates, min_candidates=weak_exact_threshold)
+        and is_exact_search_weak(fallback_candidates, min_candidates=weak_exact_threshold)
+    ):
+        title_only_responses = search_with_retry(
+            title_only_query,
+            search_timeout=search_timeout,
+            retry_on_timeout=retry_on_timeout,
+        )
+        title_only_candidates = flatten_search_responses(
+            title_only_responses,
+            source_query=title_only_query,
+    )
+
+    all_candidates = [*exact_candidates, *fallback_candidates, *title_only_candidates]
     ranked_candidates = rank_candidates_for_track(
         track,
         all_candidates,
         top_n=top_n,
         format_preference=format_preference,
     )
+    print(f"[rank] {track.display_name}: exact={len(exact_candidates)} fallback={len(fallback_candidates)} title_only={len(title_only_candidates)} ranked={len(ranked_candidates)}")
+    for c in all_candidates[:3]:
+        print(f"  candidate: {c.filename} ext={c.extension}")
 
     ranked_candidate_dicts = [ranked_candidate_to_dict(candidate) for candidate in ranked_candidates]
 
@@ -144,6 +170,7 @@ def process_track(
         "counts": {
             "exact_candidates": len(exact_candidates),
             "fallback_candidates": len(fallback_candidates),
+            "title_only_candidates": len(title_only_candidates),
             "total_candidates_before_ranking": len(all_candidates),
             "ranked_candidates_returned": len(ranked_candidates),
             "weak_exact_threshold": weak_exact_threshold,
