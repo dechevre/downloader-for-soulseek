@@ -57,13 +57,14 @@ def search_with_retry(
     *,
     search_timeout: int,
     retry_on_timeout: int,
+    early_exit_file_count: int | None = None,
 ) -> list[dict[str, Any]]:
     attempts = retry_on_timeout + 1
     last_error: Exception | None = None
 
     for attempt in range(attempts):
         try:
-            return search_soulseek(query, timeout=search_timeout)
+            return search_soulseek(query, timeout=search_timeout, early_exit_file_count=early_exit_file_count)
         except TimeoutError as exc:
             last_error = exc
             if attempt == attempts - 1:
@@ -75,7 +76,8 @@ def search_with_retry(
     if last_error:
         raise last_error
 
-    return []
+    return search_soulseek(query, timeout=search_timeout, early_exit_file_count=early_exit_file_count)
+
 
 
 def process_track(
@@ -83,7 +85,7 @@ def process_track(
     exact_query: str | None = None,
     *,
     weak_exact_threshold: int = 3,
-    top_n: int | None = 10,
+    top_n: int | None = 30,
     run_fallback: bool = True,
     search_timeout: int = 45,
     retry_on_timeout: int = 1,
@@ -98,6 +100,7 @@ def process_track(
         exact_query_used,
         search_timeout=search_timeout,
         retry_on_timeout=retry_on_timeout,
+        early_exit_file_count=30,
     )
     exact_candidates = flatten_search_responses(
         exact_responses,

@@ -32,6 +32,7 @@ class SearchCandidate:
     length: int | None = None
     extension: str | None = None
     source_query: str | None = None
+    has_free_slot: bool = False
     raw: dict[str, Any] = field(default_factory=dict) # default factory so new dict for each instance
     
 @dataclass
@@ -371,6 +372,8 @@ def flatten_search_responses(
         )
 
         files = response.get("files") or []
+        has_free_slot = bool(response.get("hasFreeUploadSlot", False))
+
 
         # Some payloads may nest files elsewhere
         if not files and isinstance(response.get("result"), dict):
@@ -379,6 +382,8 @@ def flatten_search_responses(
         for file_obj in files:
             filename = file_obj.get("filename") or file_obj.get("name") or file_obj.get("path")
             if not filename:
+                continue
+            if file_obj.get("isLocked"):
                 continue
 
             candidate = SearchCandidate(
@@ -389,6 +394,7 @@ def flatten_search_responses(
                 length=safe_int(file_obj.get("length") or file_obj.get("duration")),
                 extension=infer_extension(filename),
                 source_query=source_query,
+                has_free_slot=has_free_slot,
                 raw=file_obj,
             )
             flattened.append(candidate)
@@ -397,6 +403,11 @@ def flatten_search_responses(
 
 
 # Scoring helpers
+
+def score_slot_availability(candidate: SearchCandidate) -> tuple[int, list[str], list[str]]:
+    if candidate.has_free_slot:
+        return 8, ["User has a free upload slot"], []
+    return 0, [], ["User has no free upload slot — may queue"]
 
 def score_format(candidate: SearchCandidate) -> tuple[int, list[str], list[str]]:
     reasons: list[str] = []
@@ -747,6 +758,12 @@ def score_candidate(
     size_score, r, w = score_size_plausibility(track, candidate)
     subscores["size_plausibility"] = size_score
     total += size_score
+    reasons.extend(r)
+    warnings.extend(w)
+
+    slot_score, r, w = score_slot_availability(candidate)
+    subscores["slot_availability"] = slot_score
+    total += slot_score
     reasons.extend(r)
     warnings.extend(w)
 

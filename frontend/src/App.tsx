@@ -70,12 +70,13 @@ function App() {
     const [error, setError] = useState<string | null>(null)
     const [playlistUrl, setPlaylistUrl] = useState("")
     const [tracks, setTracks] = useState<any[]>([])
-    const [searchResults, setSearchResults] = useState<Record<number, any>>({})
+    const [searchResults, setSearchResults] = useState<Record<number, SearchResult>>({})
     const [selectedTracks, setSelectedTracks] = useState<Set<number>>(new Set())
     const [searchProgress, setSearchProgress] = useState<string>("")
     const [concurrency, setConcurrency] = useState<number>(3)
     const searchResultsRef = React.useRef<Record<number, any>>({})
-    
+    const [selectedCandidates, setSelectedCandidates] = useState<Record<number, RankedCandidate | null>>({});
+
     async function handleLoadPlaylist() {
         const response = await fetch("http://localhost:8000/playlist", {
             method: "POST",
@@ -114,6 +115,10 @@ function App() {
                         searchResultsRef.current = next
                         return next
                     })
+                    setSelectedCandidates(prev => ({
+                        ...prev,
+                        [index]: result.best_candidate ?? null
+                    }))
                 })
             )
             await new Promise(r => setTimeout(r, 1000))
@@ -147,6 +152,10 @@ function App() {
                                 searchResultsRef.current = next
                                 return next
                             })
+                            setSelectedCandidates(prev => ({
+                                ...prev,
+                                [index]: result.best_candidate ?? null
+                            }))
                         })
                     )
                     await new Promise(r => setTimeout(r, 2000))
@@ -158,17 +167,15 @@ function App() {
     }
 
     async function handleDownload() {
-        await Promise.all(
-            Object.entries(searchResults).map(async ([_, result]) => {
-                if (result.status !== "found" || !result.best_candidate) return
-                
-                await fetch("http://localhost:8000/download", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(result.best_candidate)
-                })
+        for (const [idx, candidate] of Object.entries(selectedCandidates)) {
+            if (!candidate) continue
+            await fetch("http://localhost:8000/download", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(candidate)
             })
-        )
+            await new Promise(r => setTimeout(r, 500))
+        }
         alert("Downloads queued!")
     }
 
@@ -230,43 +237,51 @@ function App() {
                     )}
                 </div>
                 <div className="playlist-list">
-                {tracks.map((track, index) => (
-                    <div
-                        key={index}
-                        className={`track-row ${selectedTracks.has(index) ? "selected" : ""}`}
-                        onClick={() => {
-                            setSelectedTracks(prev => {
-                                const next = new Set(prev)
-                                if (next.has(index)) {
-                                    next.delete(index)
-                                } else {
-                                    next.add(index)
-                                }
-                                return next
-                            })
-                        }}
-                    >
-                        <input
-                            type="checkbox"
-                            checked={selectedTracks.has(index)}
-                            onChange={() => {}}
-                        />
-                        <span className="track-index">{index + 1}</span>
-                        <span className="track-meta">
-                            <span>{track.artist}</span>
-                            <span className="separator">■</span>
-                            <span>{track.title}</span>
-                        </span>
-                        {searchResults[index] && (
-                        <span className="search-status">
-                            {searchResults[index].status === "found" 
-                                ? `✓ ${searchResults[index].counts.ranked_candidates_returned} candidates`
-                                : "✗ not found"
-                            }
-                        </span>
-                    )}
-                    </div>
-                ))}
+                    {tracks.map((track, index) => (
+                        <React.Fragment key={index}>
+                            <div
+                                className={`track-row ${selectedTracks.has(index) ? "selected" : ""}`}
+                                onClick={() => {
+                                    setSelectedTracks(prev => {
+                                        const next = new Set(prev)
+                                        if (next.has(index)) {
+                                            next.delete(index)
+                                        } else {
+                                            next.add(index)
+                                        }
+                                        return next
+                                    })
+                                }}
+                            >
+                                <input
+                                    type="checkbox"
+                                    checked={selectedTracks.has(index)}
+                                    onChange={() => {}}
+                                />
+                                <span className="track-index">{index + 1}</span>
+                                <span className="track-meta">
+                                    <span>{track.artist}</span>
+                                    <span className="separator">■</span>
+                                    <span>{track.title}</span>
+                                </span>
+                                {searchResults[index] && (
+                                    <span className="search-status">
+                                        {searchResults[index].status === "found" 
+                                            ? `✓ ${searchResults[index].counts.ranked_candidates_returned} candidates`
+                                            : "✗ not found"
+                                        }
+                                    </span>
+                                )}
+                            </div>
+                            {searchResults[index]?.status === "found" && (
+                                <TrackCard
+                                    result={searchResults[index]}
+                                    selectedCandidate={selectedCandidates[index] ?? null}
+                                    onSelectCandidate={(c) => setSelectedCandidates(prev => ({ ...prev, [index]: c }))}
+                                />
+                            )}
+                        </React.Fragment>
+                    ))}
                 </div>
             </main>
             </div>

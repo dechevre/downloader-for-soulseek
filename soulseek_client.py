@@ -27,16 +27,16 @@ def build_auth_headers(token: str) -> dict[str, str]:
     }
 
 
-def search_soulseek(query: str, timeout: int = 45, poll_interval: float = 1.0) -> list[dict]:
+def search_soulseek(query: str, timeout: int = 45, poll_interval: float = 1.0, early_exit_file_count: int | None = None) -> list[dict]:
     """
     Run a Soulseek search and return the /responses payload.
 
     Exit strategy (in priority order):
-      1. Hard deadline exceeded (timeout seconds from search start).
-      2. State is Completed/ResponseLimitReached AND min_wait has passed AND
-         file count has been stable for STABLE_TICKS consecutive polls.
-      3. State is Completed with 0 files AND min_wait has passed (no results
-         are coming — bail quickly).
+        1. Hard deadline exceeded (timeout seconds from search start).
+        2. State is Completed/ResponseLimitReached AND min_wait has passed AND
+            file count has been stable for STABLE_TICKS consecutive polls.
+        3. State is Completed with 0 files AND min_wait has passed (no results
+            are coming — bail quickly).
 
     Deliberately NO early exit on InProgress: slskd marks a search InProgress
     while peers are still sending results, and fetching /responses before the
@@ -99,8 +99,8 @@ def search_soulseek(query: str, timeout: int = 45, poll_interval: float = 1.0) -
         # ── Completed states ──────────────────────────────────────────────
         if "Completed" in state:
             # No results at all and we've waited long enough — nothing coming
-            if file_count == 0 and past_min_wait:
-                print(f"[search] Completed with 0 files after min wait — exiting")
+            if early_exit_file_count is not None and file_count >= early_exit_file_count:
+                print(f"[search] early exit — fileCount={file_count} >= threshold={early_exit_file_count}")
                 break
 
             # Track whether the count is still growing
@@ -116,14 +116,43 @@ def search_soulseek(query: str, timeout: int = 45, poll_interval: float = 1.0) -
                 break
 
         else:
-            # Not yet Completed — reset stable counter so it only counts
-            # ticks *after* the state has settled
-            stable_ticks_seen = 0
-            last_file_count = file_count
+            # Track stable count even during InProgress
+            if file_count == last_file_count:
+                stable_ticks_seen += 1
+            else:
+                stable_ticks_seen = 0
+                last_file_count = file_count
+
+            # Early exit if we have enough files and count has been stable
+            if (
+                early_exit_file_count is not None
+                and file_count >= early_exit_file_count
+                and stable_ticks_seen >= STABLE_TICKS
+            ):
+                print(f"[search] early exit InProgress — fileCount={file_count} stable for {STABLE_TICKS} ticks")
+                break
+
+
+    # Secondary wait — if we exited early during InProgress, wait for Completed
+    wait_start = time.time()
+    while time.time() - wait_start < 10:  # max 10s extra wait
+        poll = requests.get(
+            f"{BASE_URL}/api/v0/searches/{search_id}",
+            headers=headers,
+            timeout=20,
+        )
+        poll.raise_for_status()
+        data = poll.json()
+        state = data.get("state", "")
+        if "Completed" in state:
+            print(f"[search] state settled to {state} — fetching results")
+            break
+        time.sleep(0.5)
+    else:
+        print(f"[search] secondary wait timed out — fetching anyway")
 
     # Give slskd a moment to flush the final write to its response store.
-    # This is a safety net only — we should already be in Completed state.
-    time.sleep(1)
+    time.sleep(1) 
 
     results_response = requests.get(
         f"{BASE_URL}/api/v0/searches/{search_id}/responses",
