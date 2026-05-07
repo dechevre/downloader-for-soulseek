@@ -4,6 +4,9 @@ import traceback
 import os
 import shutil
 import re
+import yaml
+import json
+import subprocess
 
 
 from contextlib import asynccontextmanager
@@ -17,13 +20,52 @@ from track_processor import process_track, spotify_track_from_dict
 MAX_RETRIES = 3
 RETRY_POLL_INTERVAL = 5  # seconds between each poll
 
-ERRORED_STATES = {"Completed, Errored"}
+ERRORED_STATES = {"Completed, Errored", "Completed, TimedOut"}
 
 retry_counts: dict[str, int] = {}
 
-DOWNLOAD_DIR = os.path.expanduser("~/Music/slskd")
+TRACK_HACKER_CONFIG_PATH = os.path.join(os.path.dirname(__file__), "track_hacker_config.json")
+
+DEFAULT_CONFIG = {
+    "slskd_path": os.path.expanduser("~/slskd/slskd"),
+    "slskd_config_path": os.path.expanduser("~/Library/Application Support/slskd/slskd.yml"),
+    "download_subfolder": "Track Hacker Music"
+}
+
+def load_track_hacker_config() -> dict:
+    try:
+        with open(TRACK_HACKER_CONFIG_PATH, "r") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return DEFAULT_CONFIG.copy()
+
+def get_slskd_config_path() -> str:
+    return load_track_hacker_config().get("slskd_config_path", DEFAULT_CONFIG["slskd_config_path"])
+
+def save_track_hacker_config(config: dict) -> None:
+    with open(TRACK_HACKER_CONFIG_PATH, "w") as f:
+        json.dump(config, f, indent=2)
+
+def resolve_and_create_download_dir(subfolder: str) -> str:
+    full_path = os.path.join(os.path.expanduser("~/Downloads"), subfolder)
+    incomplete_path = os.path.join(full_path, "Incomplete")
+    os.makedirs(full_path, exist_ok=True)
+    os.makedirs(incomplete_path, exist_ok=True)
+    return full_path
+
+
+def get_download_dir() -> str:
+    try:
+        with open(get_slskd_config_path(), "r") as f:
+            config = yaml.safe_load(f)
+        return os.path.expanduser(
+            config.get("directories", {}).get("downloads", "~/Music/slskd")
+        )
+    except Exception:
+        return os.path.expanduser("~/Music/slskd")
 
 def flatten_completed_download(transfer: dict) -> None:
+    DOWNLOAD_DIR = get_download_dir()
     remote_filename = transfer.get("filename", "")
     # Get just the file's basename
     basename = re.split(r"[\\/]", remote_filename)[-1]
@@ -70,8 +112,6 @@ async def retry_failed_downloads():
                         filename = transfer.get("filename", "")
                         size = transfer.get("size")
                         key = f"{username}::{filename}"
-                        print(f"[retry debug] state={state!r} filename={filename}")
-
 
 
                         if "Completed" in state:
@@ -150,7 +190,8 @@ async def search_tracks(track: dict):
     async with semaphore:
         try:
             spotify_track = spotify_track_from_dict(track)
-            result = process_track(spotify_track, search_timeout=90)
+            format_preference = track.get("format_preference", "best_available")
+            result = process_track(spotify_track, search_timeout=90, format_preference=format_preference)
             return result
         except Exception as e:
             traceback.print_exc()
@@ -174,3 +215,84 @@ def download_track(candidate: dict):
     except Exception as e:
         print(f"[download] failed to enqueue {candidate.get('filename')}: {e}")
         return {"status": "error", "error": str(e)}
+
+@app.get("/config")
+def get_config():
+    return {"download_dir": get_download_dir()}
+
+@app.post("/config")
+def update_config(body: dict):
+    try:
+        subfolder = body.get("subfolder", "Track Hacker Music")
+        full_path = resolve_and_create_download_dir(subfolder)
+        
+        with open(get_slskd_config_path(), "r") as f:
+            config = yaml.safe_load(f)
+        
+        config.setdefault("directories", {})["downloads"] = full_path
+        config["directories"]["incomplete"] = os.path.join(full_path, "Incomplete")       
+         
+        with open(get_slskd_config_path(), "w") as f:
+            yaml.dump(config, f)
+        
+        return {"status": "ok", "download_dir": full_path}
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+@app.post("/setup")
+def setup(body: dict):
+    try:
+        slskd_path = body.get("slskd_path", DEFAULT_CONFIG["slskd_path"])
+        username = body["username"]
+        password = body["password"]
+        subfolder = body.get("download_subfolder", "Track Hacker Music")
+
+        # Save Track Hacker config
+        th_config = load_track_hacker_config()
+        th_config["slskd_path"] = slskd_path
+        th_config["download_subfolder"] = subfolder
+        save_track_hacker_config(th_config)
+
+        # Create download dirs
+        full_path = resolve_and_create_download_dir(subfolder)
+
+        # Write slskd.yml
+        slskd_config_path = get_slskd_config_path()
+        try:
+            with open(slskd_config_path, "r") as f:
+                slskd_config = yaml.safe_load(f) or {}
+        except FileNotFoundError:
+            slskd_config = {}
+
+        slskd_config.setdefault("soulseek", {})["username"] = username
+        slskd_config["soulseek"]["password"] = password
+        slskd_config.setdefault("directories", {})["downloads"] = full_path
+        slskd_config["directories"]["incomplete"] = os.path.join(full_path, "Incomplete")
+        slskd_config.setdefault("authentication", {})["disabled"] = True
+
+        with open(slskd_config_path, "w") as f:
+            yaml.dump(slskd_config, f)
+
+        # Start slskd
+        subprocess.Popen([slskd_path])
+
+        return {"status": "ok", "download_dir": full_path}
+    except Exception as e:
+        traceback.print_exc()
+        return {"status": "error", "error": str(e)}
+
+@app.get("/health")
+def health():
+    try:
+        soulseek_client.get_token()
+        return {"slskd": "ok"}
+    except Exception:
+        return {"slskd": "unreachable"}
+
+@app.get("/downloads/status")
+def get_downloads_status():
+    try:
+        downloads = soulseek_client.get_downloads()
+        return {"downloads": downloads}
+    except Exception as e:
+        return {"error": str(e)}

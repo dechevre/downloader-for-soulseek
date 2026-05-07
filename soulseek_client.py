@@ -116,21 +116,9 @@ def search_soulseek(query: str, timeout: int = 45, poll_interval: float = 1.0, e
                 break
 
         else:
-            # Track stable count even during InProgress
-            if file_count == last_file_count:
-                stable_ticks_seen += 1
-            else:
-                stable_ticks_seen = 0
-                last_file_count = file_count
+            stable_ticks_seen = 0
+            last_file_count = file_count
 
-            # Early exit if we have enough files and count has been stable
-            if (
-                early_exit_file_count is not None
-                and file_count >= early_exit_file_count
-                and stable_ticks_seen >= STABLE_TICKS
-            ):
-                print(f"[search] early exit InProgress — fileCount={file_count} stable for {STABLE_TICKS} ticks")
-                break
 
 
     # Secondary wait — if we exited early during InProgress, wait for Completed
